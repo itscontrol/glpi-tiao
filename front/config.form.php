@@ -5,9 +5,6 @@ include('../../../inc/includes.php');
 Session::checkRight('config', UPDATE);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
-    if (method_exists('Session', 'checkCSRF')) {
-        Session::checkCSRF($_POST);
-    }
     PluginTiaoConfig::save($_POST);
     Session::addMessageAfterRedirect('Configuração salva com sucesso.', true, INFO);
     Html::redirect($_SERVER['PHP_SELF']);
@@ -27,15 +24,13 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
     </div>
     <div class="card-body">
       <form method="post" action="">
-        <?php echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken() ?? '']); ?>
-        <input type="hidden" name="_no_csrf_check" value="0" />
 
         <div class="row mb-3">
           <label class="col-sm-3 col-form-label">URL da plataforma Tião</label>
           <div class="col-sm-9">
             <input type="url" name="tiao_url" class="form-control"
                    value="<?php echo htmlspecialchars($config['tiao_url']); ?>"
-                   placeholder="https://tiao.ia.br" required />
+                   placeholder="https://tiao.ia.br" />
             <div class="form-text">URL base da plataforma. Sem barra no final.</div>
           </div>
         </div>
@@ -110,7 +105,6 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
     </div>
   </div>
 
-  <!-- Log dos últimos eventos -->
   <?php
   global $DB;
   $events = [];
@@ -140,13 +134,7 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
               <td><?php echo htmlspecialchars($row['sent_at']); ?></td>
               <td><code><?php echo htmlspecialchars($row['event']); ?></code></td>
               <td>#<?php echo (int) $row['ticket_id']; ?></td>
-              <td>
-                <?php if ($row['status']): ?>
-                  <span class="badge bg-success">OK</span>
-                <?php else: ?>
-                  <span class="badge bg-danger">Erro</span>
-                <?php endif; ?>
-              </td>
+              <td><?php echo $row['status'] ? '<span class="badge bg-success">OK</span>' : '<span class="badge bg-danger">Erro</span>'; ?></td>
               <td><small class="text-muted"><?php echo htmlspecialchars(substr((string)($row['response'] ?? ''), 0, 80)); ?></small></td>
             </tr>
             <?php endforeach; ?>
