@@ -44,10 +44,7 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
                    value="<?php echo htmlspecialchars($config['api_key']); ?>"
                    placeholder="Gerada no dashboard do Tião" required />
             <div class="form-text">
-              Obtenha a key em
-              <a href="<?php echo htmlspecialchars($config['tiao_url']); ?>/dashboard/connectors" target="_blank">
-                Dashboard → Conectores → GLPI
-              </a>.
+              Dashboard Tião → Conectores → GLPI → API Key.
             </div>
           </div>
         </div>
@@ -55,10 +52,16 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
         <div class="row mb-3">
           <label class="col-sm-3 col-form-label">Secret de assinatura</label>
           <div class="col-sm-9">
-            <input type="text" class="form-control font-monospace" readonly
-                   value="<?php echo htmlspecialchars($config['secret']); ?>" />
+            <div class="input-group">
+              <input type="text" class="form-control font-monospace" readonly
+                     value="<?php echo htmlspecialchars($config['secret']); ?>" />
+              <button type="button" class="btn btn-outline-secondary"
+                      onclick="navigator.clipboard.writeText('<?php echo addslashes($config['secret']); ?>')">
+                Copiar
+              </button>
+            </div>
             <div class="form-text">
-              Cole este valor no dashboard do Tião em Conectores → GLPI → Secret.
+              Cole este valor no Dashboard Tião → Conectores → GLPI → Secret.
             </div>
           </div>
         </div>
@@ -68,20 +71,28 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
             <div class="form-check">
               <input type="checkbox" name="active" id="active" class="form-check-input" value="1"
                      <?php echo $config['active'] ? 'checked' : ''; ?> />
-              <label for="active" class="form-check-label">Plugin ativo (enviar eventos para o Tião)</label>
+              <label for="active" class="form-check-label">Plugin ativo</label>
             </div>
           </div>
         </div>
 
         <div class="row mb-4">
-          <label class="col-sm-3 col-form-label">Endpoint de recebimento</label>
+          <label class="col-sm-3 col-form-label">Webhook URL (Tião → GLPI)</label>
           <div class="col-sm-9">
             <?php
-              $webhook = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST']
-                . Plugin::getWebDir('tiao') . '/front/api.php';
+              $proto   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+              $webhook = $proto . '://' . $_SERVER['HTTP_HOST']
+                . Plugin::getWebDir('tiao', false) . '/front/api.php';
             ?>
-            <input type="text" class="form-control font-monospace" readonly value="<?php echo htmlspecialchars($webhook); ?>" />
-            <div class="form-text">Configure este URL no dashboard do Tião em Conectores → GLPI → Webhook URL.</div>
+            <div class="input-group">
+              <input type="text" class="form-control font-monospace" readonly
+                     value="<?php echo htmlspecialchars($webhook); ?>" />
+              <button type="button" class="btn btn-outline-secondary"
+                      onclick="navigator.clipboard.writeText('<?php echo addslashes($webhook); ?>')">
+                Copiar
+              </button>
+            </div>
+            <div class="form-text">Configure este URL no Dashboard Tião → Conectores → GLPI → Webhook URL.</div>
           </div>
         </div>
 
@@ -99,41 +110,43 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
   <!-- Log dos últimos eventos -->
   <?php
   global $DB;
-  $events = $DB->request([
-    'FROM'    => 'glpi_plugin_tiao_events',
-    'ORDER'   => 'sent_at DESC',
-    'LIMIT'   => 20,
-  ]);
+  $events = [];
+  foreach ($DB->request([
+      'FROM'  => 'glpi_plugin_tiao_events',
+      'ORDER' => 'sent_at DESC',
+      'LIMIT' => 20,
+  ]) as $row) {
+      $events[] = $row;
+  }
   ?>
   <div class="card">
     <div class="card-header">
-      <h3 class="card-title"><i class="ti ti-list me-2"></i>Últimos 20 eventos enviados</h3>
+      <h3 class="card-title"><i class="ti ti-list me-2"></i>Últimos eventos enviados</h3>
     </div>
     <div class="card-body p-0">
       <table class="table table-sm mb-0">
         <thead>
-          <tr>
-            <th>Data</th><th>Evento</th><th>Ticket</th><th>Status</th><th>Resposta</th>
-          </tr>
+          <tr><th>Data</th><th>Evento</th><th>Ticket</th><th>Status</th><th>Resposta</th></tr>
         </thead>
         <tbody>
-          <?php foreach ($events as $row): ?>
-          <tr>
-            <td><?php echo htmlspecialchars($row['sent_at']); ?></td>
-            <td><code><?php echo htmlspecialchars($row['event']); ?></code></td>
-            <td>#<?php echo (int) $row['ticket_id']; ?></td>
-            <td>
-              <?php if ($row['status']): ?>
-                <span class="badge bg-success">OK</span>
-              <?php else: ?>
-                <span class="badge bg-danger">Erro</span>
-              <?php endif; ?>
-            </td>
-            <td><small class="text-muted"><?php echo htmlspecialchars(substr($row['response'] ?? '', 0, 80)); ?></small></td>
-          </tr>
-          <?php endforeach; ?>
-          <?php if (!count(iterator_to_array($events, false))): ?>
-          <tr><td colspan="5" class="text-center text-muted py-3">Nenhum evento registrado ainda.</td></tr>
+          <?php if (empty($events)): ?>
+            <tr><td colspan="5" class="text-center text-muted py-3">Nenhum evento registrado ainda.</td></tr>
+          <?php else: ?>
+            <?php foreach ($events as $row): ?>
+            <tr>
+              <td><?php echo htmlspecialchars($row['sent_at']); ?></td>
+              <td><code><?php echo htmlspecialchars($row['event']); ?></code></td>
+              <td>#<?php echo (int) $row['ticket_id']; ?></td>
+              <td>
+                <?php if ($row['status']): ?>
+                  <span class="badge bg-success">OK</span>
+                <?php else: ?>
+                  <span class="badge bg-danger">Erro</span>
+                <?php endif; ?>
+              </td>
+              <td><small class="text-muted"><?php echo htmlspecialchars(substr((string)($row['response'] ?? ''), 0, 80)); ?></small></td>
+            </tr>
+            <?php endforeach; ?>
           <?php endif; ?>
         </tbody>
       </table>

@@ -1,19 +1,17 @@
 <?php
 
 define('PLUGIN_TIAO_VERSION', '1.0.0');
-define('PLUGIN_TIAO_MIN_GLPI', '10.0.0');
-define('PLUGIN_TIAO_MAX_GLPI', '11.0.99');
+define('PLUGIN_TIAO_MIN_GLPI', '11.0.0');
+define('PLUGIN_TIAO_MAX_GLPI', '12.0.99');
 
 function plugin_init_tiao() {
     global $PLUGIN_HOOKS;
 
     $PLUGIN_HOOKS['csrf_compliant']['tiao'] = true;
 
-    // Hooks de eventos de ticket (strings literais — compatível com GLPI 10+)
     $PLUGIN_HOOKS['item_add']['tiao']    = ['Ticket' => 'plugin_tiao_ticket_added'];
     $PLUGIN_HOOKS['item_update']['tiao'] = ['Ticket' => 'plugin_tiao_ticket_updated'];
 
-    // Página de configuração
     $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
 }
 
@@ -28,6 +26,9 @@ function plugin_version_tiao() {
             'glpi' => [
                 'min' => PLUGIN_TIAO_MIN_GLPI,
                 'max' => PLUGIN_TIAO_MAX_GLPI,
+            ],
+            'php'  => [
+                'min' => '8.1',
             ],
         ],
     ];
@@ -44,8 +45,6 @@ function plugin_tiao_check_prerequisites() {
 function plugin_tiao_check_config() {
     return true;
 }
-
-// ─── Callbacks de evento ─────────────────────────────────────────────────────
 
 function plugin_tiao_ticket_added(Ticket $ticket) {
     PluginTiaoNotifier::send('ticket.created', $ticket);
