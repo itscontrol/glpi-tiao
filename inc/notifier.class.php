@@ -40,6 +40,34 @@ class PluginTiaoNotifier {
         self::log($event, $ticketId, $json, ($httpCode >= 200 && $httpCode < 300), $response ?: $error);
     }
 
+    static function sendProblem(string $event, Problem $problem): void {
+        $config = PluginTiaoConfig::get();
+        if (empty($config['tiao_url']) || empty($config['api_key']) || !$config['active']) return;
+
+        $fields = $problem->fields;
+
+        $payload = [
+            'event'    => $event,
+            'problem'  => [
+                'id'          => (int) $fields['id'],
+                'title'       => $fields['name'],
+                'content'     => strip_tags($fields['content'] ?? ''),
+                'status'      => (int) $fields['status'],
+                'status_name' => Problem::getStatus($fields['status']),
+                'priority'    => (int) $fields['priority'],
+                'entity_id'   => (int) $fields['entities_id'],
+                'created_at'  => $fields['date'],
+                'updated_at'  => $fields['date_mod'],
+                'solved_at'   => $fields['solvedate'] ?? null,
+                'closed_at'   => $fields['closedate'] ?? null,
+            ],
+            'sent_at'  => date('c'),
+            'glpi_url' => self::glpiUrl(),
+        ];
+
+        self::dispatch($config, $payload, $event, (int) $fields['id']);
+    }
+
     static function sendFollowup(string $event, ITILFollowup $followup): void {
         $config = PluginTiaoConfig::get();
         if (empty($config['tiao_url']) || empty($config['api_key']) || !$config['active']) return;

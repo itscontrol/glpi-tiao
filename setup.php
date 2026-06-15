@@ -13,11 +13,13 @@ function plugin_init_tiao() {
 
     $PLUGIN_HOOKS['item_add']['tiao'] = [
         'Ticket'        => 'plugin_tiao_ticket_added',
+        'Problem'       => 'plugin_tiao_problem_added',
         'ITILFollowup'  => 'plugin_tiao_followup_added',
         'ITILSolution'  => 'plugin_tiao_solution_added',
     ];
     $PLUGIN_HOOKS['item_update']['tiao'] = [
         'Ticket'        => 'plugin_tiao_ticket_updated',
+        'Problem'       => 'plugin_tiao_problem_updated',
         'ITILSolution'  => 'plugin_tiao_solution_updated',
     ];
 
@@ -67,6 +69,19 @@ function plugin_tiao_ticket_updated(Ticket $ticket) {
         return;
     }
     PluginTiaoNotifier::send('ticket.updated', $ticket);
+}
+
+function plugin_tiao_problem_added(Problem $problem) {
+    PluginTiaoNotifier::sendProblem('problem.created', $problem);
+}
+
+function plugin_tiao_problem_updated(Problem $problem) {
+    $relevant = ['status', 'name', 'content', 'priority', 'users_id_assign', 'groups_id_assign'];
+    $updates  = array_keys($problem->updates ?? []);
+    if (empty(array_intersect($relevant, $updates))) {
+        return;
+    }
+    PluginTiaoNotifier::sendProblem('problem.updated', $problem);
 }
 
 function plugin_tiao_followup_added(ITILFollowup $followup) {
