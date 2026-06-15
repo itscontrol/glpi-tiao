@@ -9,8 +9,15 @@ function plugin_init_tiao() {
 
     $PLUGIN_HOOKS['csrf_compliant']['tiao'] = true;
 
-    $PLUGIN_HOOKS['item_add']['tiao']    = ['Ticket' => 'plugin_tiao_ticket_added'];
-    $PLUGIN_HOOKS['item_update']['tiao'] = ['Ticket' => 'plugin_tiao_ticket_updated'];
+    $PLUGIN_HOOKS['item_add']['tiao'] = [
+        'Ticket'        => 'plugin_tiao_ticket_added',
+        'ITILFollowup'  => 'plugin_tiao_followup_added',
+        'ITILSolution'  => 'plugin_tiao_solution_added',
+    ];
+    $PLUGIN_HOOKS['item_update']['tiao'] = [
+        'Ticket'        => 'plugin_tiao_ticket_updated',
+        'ITILSolution'  => 'plugin_tiao_solution_updated',
+    ];
 
     $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
 }
@@ -57,4 +64,16 @@ function plugin_tiao_ticket_updated(Ticket $ticket) {
         return;
     }
     PluginTiaoNotifier::send('ticket.updated', $ticket);
+}
+
+function plugin_tiao_followup_added(ITILFollowup $followup) {
+    PluginTiaoNotifier::sendFollowup('ticket.followup_added', $followup);
+}
+
+function plugin_tiao_solution_added(ITILSolution $solution) {
+    PluginTiaoNotifier::sendSolution('ticket.solution_added', $solution);
+}
+
+function plugin_tiao_solution_updated(ITILSolution $solution) {
+    PluginTiaoNotifier::sendSolution('ticket.solution_updated', $solution);
 }
