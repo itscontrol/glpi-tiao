@@ -30,6 +30,7 @@ class PluginTiaoConfig extends CommonDBTM {
         $fields = [
             'tiao_url' => trim($data['tiao_url'] ?? ''),
             'api_key'  => trim($data['api_key']  ?? ''),
+            'secret'   => trim($data['secret']   ?? ''),
             'active'   => isset($data['active']) ? '1' : '0',
         ];
 

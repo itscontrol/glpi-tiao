@@ -51,16 +51,11 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
         <div class="row mb-3">
           <label class="col-sm-3 col-form-label">Secret de assinatura</label>
           <div class="col-sm-9">
-            <div class="input-group">
-              <input type="text" class="form-control font-monospace" readonly
-                     value="<?php echo htmlspecialchars($config['secret']); ?>" />
-              <button type="button" class="btn btn-outline-secondary"
-                      onclick="navigator.clipboard.writeText('<?php echo addslashes($config['secret']); ?>')">
-                Copiar
-              </button>
-            </div>
+            <input type="text" name="secret" class="form-control font-monospace"
+                   value="<?php echo htmlspecialchars($config['secret']); ?>"
+                   placeholder="Cole o Secret gerado no Dashboard Tião" />
             <div class="form-text">
-              Cole este valor no Dashboard Tião → Conectores → GLPI → Secret.
+              Dashboard Tião → Conectores → GLPI → Secret. Cole aqui o mesmo valor.
             </div>
           </div>
         </div>
