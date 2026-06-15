@@ -72,15 +72,12 @@ function plugin_tiao_ticket_updated(Ticket $ticket) {
 }
 
 function plugin_tiao_problem_added(Problem $problem) {
+    Toolbox::logDebug('[Tião] problem_added chamado: #' . $problem->getID());
     PluginTiaoNotifier::sendProblem('problem.created', $problem);
 }
 
 function plugin_tiao_problem_updated(Problem $problem) {
-    $relevant = ['status', 'name', 'content', 'priority', 'users_id_assign', 'groups_id_assign'];
-    $updates  = array_keys($problem->updates ?? []);
-    if (empty(array_intersect($relevant, $updates))) {
-        return;
-    }
+    Toolbox::logDebug('[Tião] problem_updated chamado: #' . $problem->getID());
     PluginTiaoNotifier::sendProblem('problem.updated', $problem);
 }
 
