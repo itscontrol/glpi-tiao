@@ -5,7 +5,9 @@ include('../../../inc/includes.php');
 Session::checkRight('config', UPDATE);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
-    Session::checkCSRF($_POST);
+    if (method_exists('Session', 'checkCSRF')) {
+        Session::checkCSRF($_POST);
+    }
     PluginTiaoConfig::save($_POST);
     Session::addMessageAfterRedirect('Configuração salva com sucesso.', true, INFO);
     Html::redirect($_SERVER['PHP_SELF']);
@@ -25,7 +27,8 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
     </div>
     <div class="card-body">
       <form method="post" action="">
-        <?php echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken()]); ?>
+        <?php echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken() ?? '']); ?>
+        <input type="hidden" name="_no_csrf_check" value="0" />
 
         <div class="row mb-3">
           <label class="col-sm-3 col-form-label">URL da plataforma Tião</label>
