@@ -3,7 +3,6 @@
 function plugin_tiao_install() {
     global $DB;
 
-    // Tabela de configuração do plugin
     if (!$DB->tableExists('glpi_plugin_tiao_configs')) {
         $query = "CREATE TABLE `glpi_plugin_tiao_configs` (
             `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -15,17 +14,22 @@ function plugin_tiao_install() {
             `updated_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-        $DB->query($query) or die($DB->error());
 
-        // Linha única de config
+        if (!$DB->query($query)) {
+            return false;
+        }
+
+        $secret = function_exists('random_bytes')
+            ? bin2hex(random_bytes(16))
+            : md5(uniqid('tiao', true));
+
         $DB->insert('glpi_plugin_tiao_configs', [
             'tiao_url' => '',
             'api_key'  => '',
-            'secret'   => bin2hex(random_bytes(16)),
+            'secret'   => $secret,
         ]);
     }
 
-    // Log de eventos enviados ao Tião
     if (!$DB->tableExists('glpi_plugin_tiao_events')) {
         $query = "CREATE TABLE `glpi_plugin_tiao_events` (
             `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -39,7 +43,10 @@ function plugin_tiao_install() {
             KEY `ticket_id` (`ticket_id`),
             KEY `status` (`status`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
-        $DB->query($query) or die($DB->error());
+
+        if (!$DB->query($query)) {
+            return false;
+        }
     }
 
     return true;

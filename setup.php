@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Plugin Tião para GLPI
- * Integra o GLPI com a plataforma Tião (tiao.ia.br)
- */
-
 define('PLUGIN_TIAO_VERSION', '1.0.0');
 define('PLUGIN_TIAO_MIN_GLPI', '10.0.0');
 define('PLUGIN_TIAO_MAX_GLPI', '11.0.99');
@@ -14,14 +9,12 @@ function plugin_init_tiao() {
 
     $PLUGIN_HOOKS['csrf_compliant']['tiao'] = true;
 
-    // Hooks de eventos de ticket
-    $PLUGIN_HOOKS[Hooks::ITEM_ADD]['tiao']    = ['Ticket' => 'plugin_tiao_ticket_added'];
-    $PLUGIN_HOOKS[Hooks::ITEM_UPDATE]['tiao'] = ['Ticket' => 'plugin_tiao_ticket_updated'];
+    // Hooks de eventos de ticket (strings literais — compatível com GLPI 10+)
+    $PLUGIN_HOOKS['item_add']['tiao']    = ['Ticket' => 'plugin_tiao_ticket_added'];
+    $PLUGIN_HOOKS['item_update']['tiao'] = ['Ticket' => 'plugin_tiao_ticket_updated'];
 
-    // Página de configuração no menu Admin
-    if (Session::haveRight('config', UPDATE)) {
-        $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
-    }
+    // Página de configuração
+    $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
 }
 
 function plugin_version_tiao() {
@@ -59,7 +52,6 @@ function plugin_tiao_ticket_added(Ticket $ticket) {
 }
 
 function plugin_tiao_ticket_updated(Ticket $ticket) {
-    // Evita notificar quando só muda campo interno sem relevância
     $relevant = ['status', 'name', 'content', 'priority', 'users_id_assign', 'groups_id_assign'];
     $updates  = array_keys($ticket->updates ?? []);
     if (empty(array_intersect($relevant, $updates))) {
