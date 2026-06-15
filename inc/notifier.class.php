@@ -61,7 +61,7 @@ class PluginTiaoNotifier {
             ],
             'ticket'    => self::buildTicketData($ticket),
             'sent_at'   => date('c'),
-            'glpi_url'  => rtrim(GLPI_URL, '/'),
+            'glpi_url'  => self::glpiUrl(),
         ];
 
         self::dispatch($config, $payload, $event, $ticketId);
@@ -87,7 +87,7 @@ class PluginTiaoNotifier {
             ],
             'ticket'   => self::buildTicketData($ticket),
             'sent_at'  => date('c'),
-            'glpi_url' => rtrim(GLPI_URL, '/'),
+            'glpi_url' => self::glpiUrl(),
         ];
 
         self::dispatch($config, $payload, $event, $ticketId);
@@ -98,7 +98,7 @@ class PluginTiaoNotifier {
             'event'    => $event,
             'ticket'   => self::buildTicketData($ticket),
             'sent_at'  => date('c'),
-            'glpi_url' => rtrim(GLPI_URL, '/'),
+            'glpi_url' => self::glpiUrl(),
         ];
     }
 
@@ -141,6 +141,13 @@ class PluginTiaoNotifier {
             'solved_at'   => $fields['solvedate'],
             'closed_at'   => $fields['closedate'],
         ];
+    }
+
+    private static function glpiUrl(): string {
+        // GLPI_URL foi removido no GLPI 11 — reconstrói a URL base
+        $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host  = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        return $proto . '://' . $host;
     }
 
     private static function log(string $event, int $ticketId, string $payload, bool $ok, ?string $response): void {
