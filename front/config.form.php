@@ -42,7 +42,7 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
           <div class="col-sm-9">
             <input type="password" name="api_key" class="form-control"
                    value="<?php echo htmlspecialchars($config['api_key']); ?>"
-                   placeholder="Gerada no dashboard do Tião" required />
+                   placeholder="Gerada no dashboard do Tião" />
             <div class="form-text">
               Dashboard Tião → Conectores → GLPI → API Key.
             </div>
