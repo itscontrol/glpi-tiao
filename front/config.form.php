@@ -24,6 +24,7 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
     </div>
     <div class="card-body">
       <form method="post" action="">
+        <input type="hidden" name="_glpi_csrf_token" value="<?php echo Session::getNewCSRFToken(); ?>" />
 
         <div class="row mb-3">
           <label class="col-sm-3 col-form-label">URL da plataforma Tião</label>
