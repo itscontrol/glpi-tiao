@@ -7,6 +7,8 @@ define('PLUGIN_TIAO_MAX_GLPI', '12.0.99');
 function plugin_init_tiao() {
     global $PLUGIN_HOOKS;
 
+    Toolbox::logDebug('[Tião] plugin_init_tiao() carregado');
+
     $PLUGIN_HOOKS['csrf_compliant']['tiao'] = true;
 
     $PLUGIN_HOOKS['item_add']['tiao'] = [
@@ -54,6 +56,7 @@ function plugin_tiao_check_config() {
 }
 
 function plugin_tiao_ticket_added(Ticket $ticket) {
+    Toolbox::logDebug('[Tião] ticket criado: #' . $ticket->getID());
     PluginTiaoNotifier::send('ticket.created', $ticket);
 }
 
