@@ -144,8 +144,9 @@ class PluginTiaoNotifier {
         }
 
         $requester = null;
+        $requesterEmail = null; // fallback: requerente só por e-mail (chamado por e-mail anônimo)
         foreach ($ticket->getActorsForType(CommonITILActor::REQUESTER) as $req) {
-            if ($req['itemtype'] === 'User') {
+            if ($req['itemtype'] === 'User' && (int) $req['items_id'] > 0) {
                 $user = new User();
                 $user->getFromDB($req['items_id']);
                 $requester = [
@@ -156,6 +157,14 @@ class PluginTiaoNotifier {
                 ];
                 break;
             }
+            // requerente sem usuário (e-mail): guarda o alternative_email
+            if (empty($requesterEmail) && !empty($req['alternative_email'])) {
+                $requesterEmail = $req['alternative_email'];
+            }
+        }
+        // Sem usuário, mas com e-mail do remetente → cria requerente por e-mail
+        if ($requester === null && !empty($requesterEmail)) {
+            $requester = ['id' => 0, 'name' => $requesterEmail, 'email' => $requesterEmail, 'phone' => null];
         }
 
         $requestTypeId = (int) ($fields['requesttypes_id'] ?? 0);
