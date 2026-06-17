@@ -24,6 +24,29 @@ function plugin_init_tiao() {
     ];
 
     $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
+
+    // Botão no formulário do chamado: abre o atendimento no Tião
+    $PLUGIN_HOOKS['post_item_form']['tiao'] = 'plugin_tiao_post_item_form';
+}
+
+// Renderiza um botão "Abrir no Tião" no formulário do Ticket, com link para a
+// conversa correspondente na plataforma (resolvida pelo id do chamado).
+function plugin_tiao_post_item_form($params) {
+    $item = $params['item'] ?? null;
+    if (!($item instanceof Ticket) || $item->isNewItem()) return;
+
+    $cfg = PluginTiaoConfig::get();
+    $base = rtrim((string)($cfg['tiao_url'] ?? ''), '/');
+    if ($base === '') return;
+
+    $id  = (int) $item->getID();
+    $url = $base . '/dashboard/atendimentos?ticket=' . $id;
+    $u   = htmlspecialchars($url, ENT_QUOTES);
+    echo '<div style="text-align:center;margin:8px 0;">'
+       . '<a href="' . $u . '" target="_blank" rel="noopener" '
+       . 'style="display:inline-flex;align-items:center;gap:6px;background:#D81F2A;color:#fff;'
+       . 'padding:6px 14px;border-radius:8px;text-decoration:none;font-weight:600;">'
+       . '🤖 Abrir no Tião</a></div>';
 }
 
 function plugin_version_tiao() {
