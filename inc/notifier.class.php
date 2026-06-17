@@ -148,26 +148,37 @@ class PluginTiaoNotifier {
             if ($req['itemtype'] === 'User') {
                 $user = new User();
                 $user->getFromDB($req['items_id']);
-                $requester = ['id' => $req['items_id'], 'name' => $user->getFriendlyName()];
+                $requester = [
+                    'id'    => (int) $req['items_id'],
+                    'name'  => $user->getFriendlyName(),
+                    'email' => method_exists($user, 'getDefaultEmail') ? ($user->getDefaultEmail() ?: null) : null,
+                    'phone' => $user->fields['phone'] ?? ($user->fields['mobile'] ?? null),
+                ];
                 break;
             }
         }
 
+        $requestTypeId = (int) ($fields['requesttypes_id'] ?? 0);
+
         return [
-            'id'          => (int) $fields['id'],
-            'title'       => $fields['name'],
-            'content'     => strip_tags($fields['content'] ?? ''),
-            'status'      => (int) $fields['status'],
-            'status_name' => Ticket::getStatus($fields['status']),
-            'priority'    => (int) $fields['priority'],
-            'category_id' => (int) ($fields['itilcategories_id'] ?? 0),
-            'entity_id'   => (int) $fields['entities_id'],
-            'assignee'    => $assignee,
-            'requester'   => $requester,
-            'created_at'  => $fields['date'],
-            'updated_at'  => $fields['date_mod'],
-            'solved_at'   => $fields['solvedate'],
-            'closed_at'   => $fields['closedate'],
+            'id'              => (int) $fields['id'],
+            'title'           => $fields['name'],
+            'content'         => strip_tags($fields['content'] ?? ''),
+            'status'          => (int) $fields['status'],
+            'status_name'     => Ticket::getStatus($fields['status']),
+            'priority'        => (int) $fields['priority'],
+            'category_id'     => (int) ($fields['itilcategories_id'] ?? 0),
+            'entity_id'       => (int) $fields['entities_id'],
+            // Origem da requisição (Helpdesk, E-Mail, WhatsApp...) — usada pela
+            // plataforma para decidir quais tickets viram conversa.
+            'requesttypes_id' => $requestTypeId,
+            'request_source'  => $requestTypeId ? Dropdown::getDropdownName('glpi_requesttypes', $requestTypeId) : null,
+            'assignee'        => $assignee,
+            'requester'       => $requester,
+            'created_at'      => $fields['date'],
+            'updated_at'      => $fields['date_mod'],
+            'solved_at'       => $fields['solvedate'],
+            'closed_at'       => $fields['closedate'],
         ];
     }
 
