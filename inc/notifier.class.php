@@ -167,6 +167,23 @@ class PluginTiaoNotifier {
             $requester = ['id' => 0, 'name' => $requesterEmail, 'email' => $requesterEmail, 'phone' => null];
         }
 
+        // Observadores (watchers) — usuários acompanhando o chamado
+        $observers = [];
+        foreach ($ticket->getActorsForType(CommonITILActor::OBSERVER) as $obs) {
+            if ($obs['itemtype'] === 'User' && (int) $obs['items_id'] > 0) {
+                $u = new User();
+                $u->getFromDB($obs['items_id']);
+                $observers[] = [
+                    'id'    => (int) $obs['items_id'],
+                    'name'  => $u->getFriendlyName(),
+                    'email' => method_exists($u, 'getDefaultEmail') ? ($u->getDefaultEmail() ?: null) : null,
+                    'phone' => $u->fields['phone'] ?? ($u->fields['mobile'] ?? null),
+                ];
+            } elseif (!empty($obs['alternative_email'])) {
+                $observers[] = ['id' => 0, 'name' => $obs['alternative_email'], 'email' => $obs['alternative_email'], 'phone' => null];
+            }
+        }
+
         $requestTypeId = (int) ($fields['requesttypes_id'] ?? 0);
 
         return [
@@ -184,6 +201,7 @@ class PluginTiaoNotifier {
             'request_source'  => $requestTypeId ? Dropdown::getDropdownName('glpi_requesttypes', $requestTypeId) : null,
             'assignee'        => $assignee,
             'requester'       => $requester,
+            'observers'       => $observers,
             'created_at'      => $fields['date'],
             'updated_at'      => $fields['date_mod'],
             'solved_at'       => $fields['solvedate'],
