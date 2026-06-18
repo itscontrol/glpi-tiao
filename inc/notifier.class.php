@@ -68,31 +68,61 @@ class PluginTiaoNotifier {
         self::dispatch($config, $payload, $event, (int) $fields['id']);
     }
 
+    static function sendChange(string $event, Change $change): void {
+        $config = PluginTiaoConfig::get();
+        if (empty($config['tiao_url']) || empty($config['api_key']) || !$config['active']) return;
+
+        $fields = $change->fields;
+
+        $payload = [
+            'event'    => $event,
+            'change'   => [
+                'id'          => (int) $fields['id'],
+                'title'       => $fields['name'],
+                'content'     => strip_tags($fields['content'] ?? ''),
+                'status'      => (int) $fields['status'],
+                'status_name' => Change::getStatus($fields['status']),
+                'priority'    => (int) $fields['priority'],
+                'entity_id'   => (int) $fields['entities_id'],
+                'created_at'  => $fields['date'],
+                'updated_at'  => $fields['date_mod'],
+                'solved_at'   => $fields['solvedate'] ?? null,
+                'closed_at'   => $fields['closedate'] ?? null,
+            ],
+            'sent_at'  => date('c'),
+            'glpi_url' => self::glpiUrl(),
+        ];
+
+        self::dispatch($config, $payload, $event, (int) $fields['id']);
+    }
+
     static function sendFollowup(string $event, ITILFollowup $followup): void {
         $config = PluginTiaoConfig::get();
         if (empty($config['tiao_url']) || empty($config['api_key']) || !$config['active']) return;
 
-        $fields    = $followup->fields;
-        $ticketId  = (int) $fields['items_id'];
+        $fields   = $followup->fields;
+        // ITILFollowup é polimórfico: pode pertencer a Ticket, Problem ou Change.
+        $itemtype = (string) ($fields['itemtype'] ?? 'Ticket');
+        $itemId   = (int) $fields['items_id'];
 
-        $ticket = new Ticket();
-        if (!$ticket->getFromDB($ticketId)) return;
+        $parent = self::loadItilParent($itemtype, $itemId);
+        if (!$parent) return;
 
+        $evt = self::eventFor($itemtype, $event);
         $payload = [
-            'event'     => $event,
-            'followup'  => [
+            'event'    => $evt,
+            'followup' => [
                 'id'         => (int) $fields['id'],
                 'content'    => strip_tags($fields['content'] ?? ''),
                 'is_private' => (bool) $fields['is_private'],
                 'date'       => $fields['date'],
                 'users_id'   => (int) $fields['users_id'],
             ],
-            'ticket'    => self::buildTicketData($ticket),
-            'sent_at'   => date('c'),
-            'glpi_url'  => self::glpiUrl(),
-        ];
+            'sent_at'  => date('c'),
+            'glpi_url' => self::glpiUrl(),
+        ] + self::parentEnvelope($itemtype, $parent);
 
-        self::dispatch($config, $payload, $event, $ticketId);
+        self::dispatch($config, $payload, $evt, $itemId);
     }
 
     static function sendSolution(string $event, ITILSolution $solution): void {
@@ -100,25 +130,68 @@ class PluginTiaoNotifier {
         if (empty($config['tiao_url']) || empty($config['api_key']) || !$config['active']) return;
 
         $fields   = $solution->fields;
-        $ticketId = (int) $fields['items_id'];
+        $itemtype = (string) ($fields['itemtype'] ?? 'Ticket');
+        $itemId   = (int) $fields['items_id'];
 
-        $ticket = new Ticket();
-        if (!$ticket->getFromDB($ticketId)) return;
+        $parent = self::loadItilParent($itemtype, $itemId);
+        if (!$parent) return;
 
+        $evt = self::eventFor($itemtype, $event);
         $payload = [
-            'event'    => $event,
+            'event'    => $evt,
             'solution' => [
                 'id'      => (int) $fields['id'],
                 'content' => strip_tags($fields['content'] ?? ''),
                 'status'  => (int) $fields['status'],
                 'date'    => $fields['date_creation'],
             ],
-            'ticket'   => self::buildTicketData($ticket),
             'sent_at'  => date('c'),
             'glpi_url' => self::glpiUrl(),
-        ];
+        ] + self::parentEnvelope($itemtype, $parent);
 
-        self::dispatch($config, $payload, $event, $ticketId);
+        self::dispatch($config, $payload, $evt, $itemId);
+    }
+
+    // Carrega o item ITIL pai (Ticket/Problem/Change) de um followup/solução.
+    private static function loadItilParent(string $itemtype, int $id): ?CommonITILObject {
+        if (!in_array($itemtype, ['Ticket', 'Problem', 'Change'], true) || $id <= 0) return null;
+        $obj = new $itemtype();
+        if (!$obj->getFromDB($id)) return null;
+        return $obj;
+    }
+
+    // Reescreve o prefixo do evento conforme o itemtype do pai
+    // (ex.: "ticket.followup_added" + Problem → "problem.followup_added").
+    private static function eventFor(string $itemtype, string $baseEvent): string {
+        $pos    = strpos($baseEvent, '.');
+        $action = $pos !== false ? substr($baseEvent, $pos + 1) : $baseEvent;
+        return strtolower($itemtype) . '.' . $action;
+    }
+
+    // Envelope do item pai no payload: Ticket vai com dados ricos (requerente,
+    // observadores, origem); Problem/Change vão com o shape leve (thread interna).
+    private static function parentEnvelope(string $itemtype, CommonITILObject $parent): array {
+        if ($itemtype === 'Ticket') {
+            return ['ticket' => self::buildTicketData($parent)];
+        }
+        return [strtolower($itemtype) => self::buildItilData($parent)];
+    }
+
+    // Shape leve para Problem/Change (sem atores externos nem requesttypes_id).
+    private static function buildItilData(CommonITILObject $item): array {
+        $f = $item->fields;
+        return [
+            'id'         => (int) $f['id'],
+            'title'      => $f['name'] ?? null,
+            'content'    => strip_tags($f['content'] ?? ''),
+            'status'     => (int) ($f['status'] ?? 0),
+            'priority'   => (int) ($f['priority'] ?? 0),
+            'entity_id'  => (int) ($f['entities_id'] ?? 0),
+            'created_at' => $f['date'] ?? null,
+            'updated_at' => $f['date_mod'] ?? null,
+            'solved_at'  => $f['solvedate'] ?? null,
+            'closed_at'  => $f['closedate'] ?? null,
+        ];
     }
 
     private static function buildPayload(string $event, Ticket $ticket): array {
