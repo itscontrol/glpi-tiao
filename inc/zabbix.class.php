@@ -3,14 +3,21 @@
 /**
  * Zabbix → GLPI Problema.
  * Recebe eventos de monitoramento do Zabbix e cria/correlaciona Problemas no GLPI.
- * Fase 1: criação + dedup por título/entidade + resolução de entidade por prefixo.
- * (Recovery/Acknowledge = Fase 2.)
+ * - Problema (alerta): cria (com dedup por título+entidade) ou ignora se já aberto.
+ * - Recovery (Zabbix recuperou): coloca o Problema em Observação.
+ * - Acknowledge (técnico reconheceu): registra solução e Soluciona o Problema.
  *
- * Ao criar o Problema nativamente, o hook item_add dispara o notifier
- * (plugin_tiao_problem_added → problem.created), então o problema aparece
- * automaticamente na aba "Problemas" do tiao-platform.
+ * Tudo nativo (sem token/REST). Ao criar/atualizar/solucionar, os hooks do GLPI
+ * disparam o notifier (problem.created/updated/solution_added) → o tiao-platform
+ * reflete na aba "Problemas".
  */
 class PluginTiaoZabbix {
+
+    // Status ITIL (GLPI). Locais para não depender de constantes do core.
+    const ST_NEW      = 1;
+    const ST_SOLVED   = 5;
+    const ST_CLOSED   = 6;
+    const ST_OBSERVED = 8;
 
     static function handle(array $payload): array {
         $title = self::normalizeTitle($payload['alert_subject'] ?? $payload['subject'] ?? $payload['title'] ?? '');
@@ -19,51 +26,87 @@ class PluginTiaoZabbix {
         }
 
         $entityId = self::resolveEntity($payload);
+        $recovery = self::isRecovery($payload);
+        $ack      = self::isAcknowledge($payload);
 
-        // Recovery / Acknowledge → Fase 2 (ainda não resolve/encerra aqui).
-        if (self::isRecovery($payload) || self::isAcknowledge($payload)) {
-            return ['processed' => true, 'action' => 'skipped_recovery_ack_phase2', 'title' => $title];
+        // Recovery / Acknowledge agem sobre um Problema já existente.
+        if ($recovery || $ack) {
+            $problemId = self::resolveExistingProblemId($payload, $title, $entityId);
+            if (!$problemId) {
+                return ['processed' => true, 'action' => 'no_open_problem', 'title' => $title];
+            }
+            return $ack
+                ? self::acknowledgeSolve($problemId, $payload, $title)
+                : self::recoveryObserve($problemId, $payload);
         }
 
-        // Dedup: já existe Problema ABERTO com o mesmo título nessa entidade?
-        // (O título do Zabbix é a chave de correlação.)
+        // Alerta novo: dedup por título aberto na entidade (título = chave de correlação).
         $existingId = self::findOpenProblemByTitle($title, $entityId);
         if ($existingId) {
-            return [
-                'processed'  => true,
-                'action'     => 'duplicate_open',
-                'problem_id' => $existingId,
-                'entity_id'  => $entityId,
-                'title'      => $title,
-            ];
+            return ['processed' => true, 'action' => 'duplicate_open', 'problem_id' => $existingId, 'entity_id' => $entityId, 'title' => $title];
         }
 
         $priority = self::severityToPriority($payload);
         $problem  = new Problem();
-        $input = [
+        $id = $problem->add([
             'name'        => $title,
             'content'     => self::buildContent($payload, $title),
-            'status'      => Problem::INCOMING,
+            'status'      => self::ST_NEW,
             'urgency'     => $priority,
             'impact'      => 3,
             'priority'    => $priority,
             'entities_id' => $entityId,
-        ];
-
-        $id = $problem->add($input);
+        ]);
         if (!$id) {
             throw new RuntimeException('Falha ao criar problema', 500);
         }
 
-        return [
-            'processed'  => true,
-            'action'     => 'created',
-            'problem_id' => (int) $id,
-            'entity_id'  => $entityId,
-            'priority'   => $priority,
-            'title'      => $title,
-        ];
+        return ['processed' => true, 'action' => 'created', 'problem_id' => (int) $id, 'entity_id' => $entityId, 'priority' => $priority, 'title' => $title];
     }
+
+    private static function recoveryObserve(int $problemId, array $payload): array {
+        $problem = new Problem();
+        if (!$problem->getFromDB($problemId)) {
+            return ['processed' => true, 'action' => 'recovery_problem_not_found', 'problem_id' => $problemId];
+        }
+        if (in_array((int) $problem->fields['status'], [self::ST_SOLVED, self::ST_CLOSED], true)) {
+            return ['processed' => true, 'action' => 'recovery_skip_closed', 'problem_id' => $problemId];
+        }
+        $note = trim(strip_tags((string) ($payload['recovery_message'] ?? $payload['alert_message'] ?? $payload['message'] ?? '')));
+        $fup  = new ITILFollowup();
+        $fup->add([
+            'itemtype'   => 'Problem',
+            'items_id'   => $problemId,
+            'content'    => 'Recuperação detectada no monitoramento (Zabbix).' . ($note !== '' ? "\n\n$note" : ''),
+            'is_private' => 0,
+        ]);
+        $problem->update(['id' => $problemId, 'status' => self::ST_OBSERVED]);
+        return ['processed' => true, 'action' => 'recovery_observed', 'problem_id' => $problemId];
+    }
+
+    private static function acknowledgeSolve(int $problemId, array $payload, string $title): array {
+        $problem = new Problem();
+        if (!$problem->getFromDB($problemId)) {
+            return ['processed' => true, 'action' => 'ack_problem_not_found', 'problem_id' => $problemId];
+        }
+        if (in_array((int) $problem->fields['status'], [self::ST_SOLVED, self::ST_CLOSED], true)) {
+            return ['processed' => true, 'action' => 'ack_skip_closed', 'problem_id' => $problemId];
+        }
+        $solution = new ITILSolution();
+        $sid = $solution->add([
+            'itemtype' => 'Problem',
+            'items_id' => $problemId,
+            'content'  => self::buildAckSolution($payload, $title),
+        ]);
+        // Adicionar solução já move para Solucionado; garante o status.
+        $fresh = new Problem();
+        if ($fresh->getFromDB($problemId) && (int) $fresh->fields['status'] !== self::ST_SOLVED) {
+            $fresh->update(['id' => $problemId, 'status' => self::ST_SOLVED]);
+        }
+        return ['processed' => true, 'action' => 'acknowledge_solved', 'problem_id' => $problemId, 'solution_id' => (int) $sid];
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static function normalizeTitle($value): string {
         $s = html_entity_decode((string) $value, ENT_QUOTES, 'UTF-8');
@@ -118,11 +161,30 @@ class PluginTiaoZabbix {
         return implode("\n\n", $parts);
     }
 
+    private static function buildAckSolution(array $p, string $title): string {
+        $obs = trim(strip_tags((string) ($p['acknowledge_message'] ?? $p['ack_message'] ?? $p['message'] ?? $p['observation'] ?? '')));
+        $who = trim((string) ($p['ack_user'] ?? $p['user'] ?? ''));
+        $parts = [];
+        if ($obs !== '') $parts[] = $obs;
+        if ($who !== '') $parts[] = "Reconhecido por: $who";
+        if (empty($parts)) $parts[] = "Reconhecido no monitoramento (Zabbix): $title";
+        return implode("\n\n", $parts);
+    }
+
     private static function extractHost(array $p): string {
         foreach (['host', 'host_name', 'hostname', 'zabbix_host'] as $k) {
             if (!empty($p[$k])) return trim((string) $p[$k]);
         }
         return '';
+    }
+
+    private static function resolveExistingProblemId(array $p, string $title, int $entityId): ?int {
+        $explicit = $p['problem_id'] ?? $p['glpi_problem_id'] ?? null;
+        if (is_numeric($explicit) && (int) $explicit > 0) {
+            $pr = new Problem();
+            if ($pr->getFromDB((int) $explicit)) return (int) $explicit;
+        }
+        return self::findOpenProblemByTitle($title, $entityId);
     }
 
     // Problema aberto (não Solucionado/Fechado) com o mesmo título na entidade.
@@ -135,7 +197,7 @@ class PluginTiaoZabbix {
                 'name'        => $title,
                 'is_deleted'  => 0,
                 'entities_id' => $entityId,
-                'NOT'         => ['status' => [Problem::SOLVED, Problem::CLOSED]],
+                'NOT'         => ['status' => [self::ST_SOLVED, self::ST_CLOSED]],
             ],
             'ORDER'  => ['id DESC'],
             'LIMIT'  => 1,
