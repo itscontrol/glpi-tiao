@@ -43,7 +43,7 @@ class PluginTiaoZabbix {
         // Alerta novo: dedup por título aberto na entidade (título = chave de correlação).
         $existingId = self::findOpenProblemByTitle($title, $entityId);
         if ($existingId) {
-            return ['processed' => true, 'action' => 'duplicate_open', 'problem_id' => $existingId, 'entity_id' => $entityId, 'title' => $title];
+            return ['processed' => true, 'action' => 'duplicate_open', 'problem_id' => $existingId, 'entity_id' => $entityId, 'title' => $title, 'tags' => self::buildTags($existingId)];
         }
 
         $priority = self::severityToPriority($payload);
@@ -61,7 +61,7 @@ class PluginTiaoZabbix {
             throw new RuntimeException('Falha ao criar problema', 500);
         }
 
-        return ['processed' => true, 'action' => 'created', 'problem_id' => (int) $id, 'entity_id' => $entityId, 'priority' => $priority, 'title' => $title];
+        return ['processed' => true, 'action' => 'created', 'problem_id' => (int) $id, 'entity_id' => $entityId, 'priority' => $priority, 'title' => $title, 'tags' => self::buildTags((int) $id)];
     }
 
     private static function recoveryObserve(int $problemId, array $payload): array {
@@ -81,7 +81,7 @@ class PluginTiaoZabbix {
             'is_private' => 0,
         ]);
         $problem->update(['id' => $problemId, 'status' => self::ST_OBSERVED]);
-        return ['processed' => true, 'action' => 'recovery_observed', 'problem_id' => $problemId];
+        return ['processed' => true, 'action' => 'recovery_observed', 'problem_id' => $problemId, 'tags' => self::buildTags($problemId)];
     }
 
     private static function acknowledgeSolve(int $problemId, array $payload, string $title): array {
@@ -103,7 +103,7 @@ class PluginTiaoZabbix {
         if ($fresh->getFromDB($problemId) && (int) $fresh->fields['status'] !== self::ST_SOLVED) {
             $fresh->update(['id' => $problemId, 'status' => self::ST_SOLVED]);
         }
-        return ['processed' => true, 'action' => 'acknowledge_solved', 'problem_id' => $problemId, 'solution_id' => (int) $sid];
+        return ['processed' => true, 'action' => 'acknowledge_solved', 'problem_id' => $problemId, 'solution_id' => (int) $sid, 'tags' => self::buildTags($problemId)];
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -126,20 +126,43 @@ class PluginTiaoZabbix {
         return false;
     }
 
-    // Entidade: explícita (entity_id) → por prefixo (notification_subject_tag) → raiz (0).
+    // Entidade: ID numérico explícito → prefixo (notification_subject_tag, ex.: #crth)
+    // → raiz (0). Aceita os campos do media type do Zabbix (alert_sendto, glpi_token...).
     private static function resolveEntity(array $p): int {
-        $explicit = $p['entity_id'] ?? $p['glpi_entity_id'] ?? null;
-        if (is_numeric($explicit) && (int) $explicit >= 0) {
-            return (int) $explicit;
+        $idFields = ['entity_id', 'glpi_entity_id', 'alert_sendto', 'glpi_token', 'send_to', 'sendto'];
+        foreach ($idFields as $k) {
+            $v = trim((string) ($p[$k] ?? ''));
+            if (preg_match('/^\d+$/', $v)) return (int) $v;
         }
-        $prefix = trim((string) ($p['prefix'] ?? $p['entity_prefix'] ?? $p['tag'] ?? ''));
-        if ($prefix !== '') {
-            $entity = new Entity();
-            if ($entity->getFromDBByCrit(['notification_subject_tag' => $prefix])) {
-                return (int) $entity->getID();
+        $prefixFields = ['alert_sendto', 'glpi_token', 'prefix', 'entity_prefix', 'tag', 'send_to', 'sendto'];
+        foreach ($prefixFields as $k) {
+            $prefix = self::prefixFromRaw((string) ($p[$k] ?? ''));
+            if ($prefix !== '') {
+                $entity = new Entity();
+                if ($entity->getFromDBByCrit(['notification_subject_tag' => $prefix])) {
+                    return (int) $entity->getID();
+                }
             }
         }
         return 0; // raiz
+    }
+
+    // Extrai o prefixo de valores tipo "#crth", "#crth/#itsc", "crth" → "crth".
+    private static function prefixFromRaw(string $raw): string {
+        $parts = preg_split('/[#\/,\s]+/', trim($raw), -1, PREG_SPLIT_NO_EMPTY);
+        if (!$parts) return '';
+        $first = trim($parts[0]);
+        return preg_match('/^\d+$/', $first) ? '' : $first;
+    }
+
+    // Tags devolvidas ao Zabbix (o script grava no evento → recovery/ack correlacionam).
+    private static function buildTags(int $problemId): array {
+        $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host  = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        return [
+            '__zbx_glpi_problem_id' => (string) $problemId,
+            '__zbx_glpi_link'       => "$proto://$host/front/problem.form.php?id=$problemId",
+        ];
     }
 
     // Severidade do Zabbix (event_nseverity 0–5) → prioridade GLPI (1–5). 0/ausente = 3.

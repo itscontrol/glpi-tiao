@@ -31,12 +31,23 @@ if (empty($config['active'])) {
     exit;
 }
 
-$sentKey = $_SERVER['HTTP_X_TIAO_API_KEY']
+// O script do Zabbix manda o segredo no header X-Zabbix-Webhook-Secret; aceitamos
+// também X-Tiao-Api-Key ou campo no corpo. Casa com a api_key OU o secret do plugin.
+$sentKey = $_SERVER['HTTP_X_ZABBIX_WEBHOOK_SECRET']
+    ?? $_SERVER['HTTP_X_TIAO_API_KEY']
     ?? $body['api_key']
     ?? $body['token']
     ?? $body['secret']
     ?? '';
-if (empty($config['api_key']) || !hash_equals((string) $config['api_key'], (string) $sentKey)) {
+$validKeys = array_values(array_filter([
+    (string) ($config['api_key'] ?? ''),
+    (string) ($config['secret'] ?? ''),
+]));
+$authOk = false;
+foreach ($validKeys as $vk) {
+    if ($vk !== '' && hash_equals($vk, (string) $sentKey)) { $authOk = true; break; }
+}
+if (!$authOk) {
     http_response_code(401);
     echo json_encode(['ok' => false, 'error' => 'API key inválida']);
     exit;
