@@ -17,7 +17,7 @@ class PluginTiaoNotifier {
     private static function dispatch(array $config, array $payload, string $event, int $ticketId): void {
         $json = json_encode($payload);
         $sig  = hash_hmac('sha256', $json, $config['secret']);
-        $url  = rtrim($config['tiao_url'], '/') . '/api/glpi/webhook';
+        $url  = rtrim($config['tiao_url'], '/') . '/api/glpi/plugin';
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
