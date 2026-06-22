@@ -17,12 +17,14 @@ function plugin_init_tiao() {
         'Change'        => 'plugin_tiao_change_added',
         'ITILFollowup'  => 'plugin_tiao_followup_added',
         'ITILSolution'  => 'plugin_tiao_solution_added',
+        'TicketTask'    => 'plugin_tiao_task_added',
     ];
     $PLUGIN_HOOKS['item_update']['tiao'] = [
         'Ticket'        => 'plugin_tiao_ticket_updated',
         'Problem'       => 'plugin_tiao_problem_updated',
         'Change'        => 'plugin_tiao_change_updated',
         'ITILSolution'  => 'plugin_tiao_solution_updated',
+        'TicketTask'    => 'plugin_tiao_task_updated',
     ];
 
     $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
@@ -149,4 +151,12 @@ function plugin_tiao_solution_added(ITILSolution $solution) {
 
 function plugin_tiao_solution_updated(ITILSolution $solution) {
     PluginTiaoNotifier::sendSolution('ticket.solution_updated', $solution);
+}
+
+function plugin_tiao_task_added(TicketTask $task) {
+    PluginTiaoNotifier::sendTask('ticket.task_added', $task);
+}
+
+function plugin_tiao_task_updated(TicketTask $task) {
+    PluginTiaoNotifier::sendTask('ticket.task_updated', $task);
 }
