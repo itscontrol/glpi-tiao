@@ -152,6 +152,36 @@ class PluginTiaoNotifier {
         self::dispatch($config, $payload, $evt, $itemId);
     }
 
+    static function sendTask(string $event, TicketTask $task): void {
+        $config = PluginTiaoConfig::get();
+        if (empty($config['tiao_url']) || empty($config['api_key']) || !$config['active']) return;
+
+        $fields   = $task->fields;
+        $ticketId = (int) ($fields['tickets_id'] ?? 0);
+        if ($ticketId <= 0) return;
+
+        $ticket = new Ticket();
+        if (!$ticket->getFromDB($ticketId)) return;
+
+        $payload = [
+            'event'   => $event,
+            'ticket'  => self::buildTicketData($ticket),
+            'task'    => [
+                'id'         => (int) $fields['id'],
+                'begin'      => $fields['begin'] ?? null,
+                'end'        => $fields['end'] ?? null,
+                'actiontime' => (int) ($fields['actiontime'] ?? 0),
+                'users_id'   => (int) ($fields['users_id_tech'] ?? 0),
+                'content'    => strip_tags($fields['content'] ?? ''),
+                'tickets_id' => $ticketId,
+            ],
+            'sent_at'  => date('c'),
+            'glpi_url' => self::glpiUrl(),
+        ];
+
+        self::dispatch($config, $payload, $event, $ticketId);
+    }
+
     // Carrega o item ITIL pai (Ticket/Problem/Change) de um followup/solução.
     private static function loadItilParent(string $itemtype, int $id): ?CommonITILObject {
         if (!in_array($itemtype, ['Ticket', 'Problem', 'Change'], true) || $id <= 0) return null;
