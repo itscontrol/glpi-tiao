@@ -124,8 +124,28 @@ class PluginTiaoConfig extends CommonDBTM {
     private static function hasColumn(string $field): bool {
         global $DB;
 
-        return method_exists($DB, 'fieldExists')
-            ? $DB->fieldExists(self::TABLE, $field, false)
-            : false;
+        if (method_exists($DB, 'fieldExists')) {
+            return (bool) $DB->fieldExists(self::TABLE, $field, false);
+        }
+
+        // fieldExists não existe nesta versão do GLPI — consulta information_schema.
+        // Fallback seguro: assume que a coluna existe para não disparar migração
+        // destrutiva (DROP + recreate) que apagaria toda a config.
+        try {
+            $result = $DB->doQuery(
+                "SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = '" . self::TABLE . "'
+                   AND COLUMN_NAME = '" . $field . "'"
+            );
+            if ($result) {
+                $row = $DB->fetchAssoc($result);
+                return isset($row['cnt']) && (int) $row['cnt'] > 0;
+            }
+        } catch (\Throwable $e) {
+            // Ignore — assume exists
+        }
+
+        return true;
     }
 }
