@@ -113,11 +113,9 @@ function plugin_tiao_ticket_added(Ticket $ticket) {
 }
 
 function plugin_tiao_ticket_updated(Ticket $ticket) {
-    $relevant = ['status', 'name', 'content', 'priority', 'users_id_assign', 'groups_id_assign'];
-    $updates  = array_keys($ticket->updates ?? []);
-    if (empty(array_intersect($relevant, $updates))) {
-        return;
-    }
+    // Envia sempre — a plataforma detecta o que mudou (status, priority, SLA…).
+    // O filtro por $ticket->updates foi removido porque no GLPI 11 a propriedade
+    // não está populada no momento do hook item_update.
     PluginTiaoNotifier::send('ticket.updated', $ticket);
 }
 
