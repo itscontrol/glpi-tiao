@@ -296,8 +296,16 @@ class PluginTiaoNotifier {
             'status'          => (int) $fields['status'],
             'status_name'     => Ticket::getStatus($fields['status']),
             'priority'        => (int) $fields['priority'],
+            'urgency'         => (int) ($fields['urgency'] ?? 0),
             'category_id'     => (int) ($fields['itilcategories_id'] ?? 0),
             'entity_id'       => (int) $fields['entities_id'],
+            // SLA/OLA do GLPI — prazos reais calculados pelo motor de SLA, no
+            // calendário do cliente. A plataforma usa como due da task do Reclaim
+            // (prefere o interno/OLA). null quando o chamado não tem SLA atribuído.
+            'time_to_resolve'          => self::toIso($fields['time_to_resolve'] ?? null),
+            'internal_time_to_resolve' => self::toIso($fields['internal_time_to_resolve'] ?? null),
+            'time_to_own'              => self::toIso($fields['time_to_own'] ?? null),
+            'internal_time_to_own'     => self::toIso($fields['internal_time_to_own'] ?? null),
             // Origem da requisição (Helpdesk, E-Mail, WhatsApp...) — usada pela
             // plataforma para decidir quais tickets viram conversa.
             'requesttypes_id' => $requestTypeId,
@@ -317,6 +325,19 @@ class PluginTiaoNotifier {
         $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host  = $_SERVER['HTTP_HOST'] ?? 'localhost';
         return $proto . '://' . $host;
+    }
+
+    // Converte um datetime naive do GLPI (ex.: "2026-06-24 14:25:00", no fuso
+    // configurado no GLPI) para ISO8601 com offset — evita erro de fuso quando a
+    // plataforma interpreta a data do SLA. Retorna null para datas vazias/zeradas.
+    private static function toIso(?string $dt): ?string {
+        if (empty($dt) || strpos($dt, '0000-00-00') === 0) return null;
+        try {
+            $tz = new DateTimeZone(date_default_timezone_get());
+            return (new DateTime($dt, $tz))->format('c');
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     private static function log(string $event, int $ticketId, string $payload, bool $ok, ?string $response): void {
