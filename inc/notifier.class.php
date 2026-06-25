@@ -51,7 +51,7 @@ class PluginTiaoNotifier {
             'problem'  => [
                 'id'          => (int) $fields['id'],
                 'title'       => $fields['name'],
-                'content'     => strip_tags($fields['content'] ?? ''),
+                'content'     => $fields['content'] ?? '',
                 'status'      => (int) $fields['status'],
                 'status_name' => Problem::getStatus($fields['status']),
                 'priority'    => (int) $fields['priority'],
@@ -79,7 +79,7 @@ class PluginTiaoNotifier {
             'change'   => [
                 'id'          => (int) $fields['id'],
                 'title'       => $fields['name'],
-                'content'     => strip_tags($fields['content'] ?? ''),
+                'content'     => $fields['content'] ?? '',
                 'status'      => (int) $fields['status'],
                 'status_name' => Change::getStatus($fields['status']),
                 'priority'    => (int) $fields['priority'],
@@ -113,7 +113,7 @@ class PluginTiaoNotifier {
             'event'    => $evt,
             'followup' => [
                 'id'                => (int) $fields['id'],
-                'content'           => strip_tags($fields['content'] ?? ''),
+                'content'           => $fields['content'] ?? '',
                 'is_private'        => (bool) $fields['is_private'],
                 'date'              => $fields['date'],
                 'users_id'          => (int) $fields['users_id'],
@@ -142,7 +142,7 @@ class PluginTiaoNotifier {
             'event'    => $evt,
             'solution' => [
                 'id'      => (int) $fields['id'],
-                'content' => strip_tags($fields['content'] ?? ''),
+                'content' => $fields['content'] ?? '',
                 'status'  => (int) $fields['status'],
                 'date'    => $fields['date_creation'],
             ],
@@ -173,7 +173,7 @@ class PluginTiaoNotifier {
                 'end'        => $fields['end'] ?? null,
                 'actiontime' => (int) ($fields['actiontime'] ?? 0),
                 'users_id'   => (int) ($fields['users_id_tech'] ?? 0),
-                'content'    => strip_tags($fields['content'] ?? ''),
+                'content'    => $fields['content'] ?? '',
                 'tickets_id' => $ticketId,
             ],
             'sent_at'  => date('c'),
@@ -214,7 +214,7 @@ class PluginTiaoNotifier {
         return [
             'id'         => (int) $f['id'],
             'title'      => $f['name'] ?? null,
-            'content'    => strip_tags($f['content'] ?? ''),
+            'content'    => $f['content'] ?? '',
             'status'     => (int) ($f['status'] ?? 0),
             'priority'   => (int) ($f['priority'] ?? 0),
             'entity_id'  => (int) ($f['entities_id'] ?? 0),
@@ -324,7 +324,7 @@ class PluginTiaoNotifier {
         return [
             'id'              => (int) $fields['id'],
             'title'           => $fields['name'],
-            'content'         => strip_tags($fields['content'] ?? ''),
+            'content'         => $fields['content'] ?? '',
             'status'          => (int) $fields['status'],
             'status_name'     => Ticket::getStatus($fields['status']),
             'priority'        => (int) $fields['priority'],
