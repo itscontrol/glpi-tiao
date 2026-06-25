@@ -250,7 +250,7 @@ class PluginTiaoNotifier {
             'WHERE' => [
                 'di.itemtype'    => 'Ticket',
                 'di.items_id'   => $ticketId,
-                ['RAW'          => "`d`.`mime` LIKE 'image/%'"],
+                new \QueryExpression("`d`.`mime` LIKE 'image/%'"),
             ],
             'LIMIT' => 3,
         ]);
