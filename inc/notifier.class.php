@@ -112,11 +112,12 @@ class PluginTiaoNotifier {
         $payload = [
             'event'    => $evt,
             'followup' => [
-                'id'         => (int) $fields['id'],
-                'content'    => strip_tags($fields['content'] ?? ''),
-                'is_private' => (bool) $fields['is_private'],
-                'date'       => $fields['date'],
-                'users_id'   => (int) $fields['users_id'],
+                'id'                => (int) $fields['id'],
+                'content'           => strip_tags($fields['content'] ?? ''),
+                'is_private'        => (bool) $fields['is_private'],
+                'date'              => $fields['date'],
+                'users_id'          => (int) $fields['users_id'],
+                'timeline_position' => (int) ($fields['timeline_position'] ?? 0),
             ],
             'sent_at'  => date('c'),
             'glpi_url' => self::glpiUrl(),
