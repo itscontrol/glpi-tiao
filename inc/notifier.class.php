@@ -234,6 +234,37 @@ class PluginTiaoNotifier {
         ];
     }
 
+    // Retorna os documentos de imagem vinculados ao ticket (até 3).
+    // Usado para que a plataforma possa baixar e passar as imagens ao LLM.
+    private static function getTicketImageDocuments(int $ticketId): array {
+        global $DB;
+        $docs = [];
+        $iterator = $DB->request([
+            'SELECT'     => ['d.id', 'd.name', 'd.mime', 'd.filename'],
+            'FROM'       => 'glpi_documents AS d',
+            'INNER JOIN' => [
+                'glpi_documents_items AS di' => [
+                    'ON' => ['di' => 'documents_id', 'd' => 'id'],
+                ],
+            ],
+            'WHERE' => [
+                'di.itemtype'    => 'Ticket',
+                'di.items_id'   => $ticketId,
+                ['RAW'          => "`d`.`mime` LIKE 'image/%'"],
+            ],
+            'LIMIT' => 3,
+        ]);
+        foreach ($iterator as $row) {
+            $docs[] = [
+                'id'       => (int) $row['id'],
+                'name'     => (string) ($row['name'] ?? ''),
+                'mime'     => (string) ($row['mime'] ?? 'image/jpeg'),
+                'filename' => (string) ($row['filename'] ?? ''),
+            ];
+        }
+        return $docs;
+    }
+
     private static function buildTicketData(Ticket $ticket): array {
         $fields = $ticket->fields;
 
@@ -318,6 +349,7 @@ class PluginTiaoNotifier {
             'updated_at'      => $fields['date_mod'],
             'solved_at'       => $fields['solvedate'],
             'closed_at'       => $fields['closedate'],
+            'documents'       => self::getTicketImageDocuments((int) $fields['id']),
         ];
     }
 
