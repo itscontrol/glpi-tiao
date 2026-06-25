@@ -29,6 +29,12 @@ function plugin_init_tiao() {
 
     $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
 
+    // Widget flutuante com timer ativo (visível em todas as páginas GLPI)
+    $cfg = PluginTiaoConfig::get();
+    if (!empty($cfg['tiao_url']) && !empty($cfg['active'])) {
+        $PLUGIN_HOOKS['add_javascript']['tiao'] = ['front/float-config.php', 'front/tiao-float.js'];
+    }
+
     // Botão no formulário do chamado: abre o atendimento no Tião
     $PLUGIN_HOOKS['post_item_form']['tiao'] = 'plugin_tiao_post_item_form';
 }
