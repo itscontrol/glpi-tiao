@@ -153,6 +153,21 @@ class PluginTiaoNotifier {
         self::dispatch($config, $payload, $evt, $itemId);
     }
 
+    static function sendDeleted(string $event, string $itemtype, int $itemId): void {
+        $config = PluginTiaoConfig::get();
+        if (empty($config['tiao_url']) || empty($config['api_key']) || !$config['active']) return;
+        if ($itemId <= 0) return;
+
+        $module = strtolower($itemtype); // Ticket→ticket, Problem→problem, Change→change
+        $payload = [
+            'event'    => $event,
+            $module    => ['id' => $itemId],
+            'sent_at'  => date('c'),
+            'glpi_url' => self::glpiUrl(),
+        ];
+        self::dispatch($config, $payload, $event, $itemId);
+    }
+
     static function sendTask(string $event, TicketTask $task): void {
         $config = PluginTiaoConfig::get();
         if (empty($config['tiao_url']) || empty($config['api_key']) || !$config['active']) return;

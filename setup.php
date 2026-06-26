@@ -26,6 +26,11 @@ function plugin_init_tiao() {
         'ITILSolution'  => 'plugin_tiao_solution_updated',
         'TicketTask'    => 'plugin_tiao_task_updated',
     ];
+    $PLUGIN_HOOKS['item_purge']['tiao'] = [
+        'Ticket'  => 'plugin_tiao_ticket_purged',
+        'Problem' => 'plugin_tiao_problem_purged',
+        'Change'  => 'plugin_tiao_change_purged',
+    ];
 
     $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
 
@@ -162,4 +167,16 @@ function plugin_tiao_task_added(TicketTask $task) {
 
 function plugin_tiao_task_updated(TicketTask $task) {
     PluginTiaoNotifier::sendTask('ticket.task_updated', $task);
+}
+
+function plugin_tiao_ticket_purged(Ticket $ticket) {
+    PluginTiaoNotifier::sendDeleted('ticket.deleted', 'Ticket', (int) $ticket->fields['id']);
+}
+
+function plugin_tiao_problem_purged(Problem $problem) {
+    PluginTiaoNotifier::sendDeleted('problem.deleted', 'Problem', (int) $problem->fields['id']);
+}
+
+function plugin_tiao_change_purged(Change $change) {
+    PluginTiaoNotifier::sendDeleted('change.deleted', 'Change', (int) $change->fields['id']);
 }
