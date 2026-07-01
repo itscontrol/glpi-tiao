@@ -34,7 +34,7 @@ function plugin_init_tiao() {
 
     $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
 
-    // Botão + timer no formulário do chamado
+    // Link direto no formulário do chamado
     $PLUGIN_HOOKS['post_item_form']['tiao'] = 'plugin_tiao_post_item_form';
 }
 
@@ -51,16 +51,13 @@ function plugin_tiao_post_item_form($params) {
     $id  = (int) $item->getID();
     $url = $base . '/dashboard/atendimentos?ticket=' . $id;
     $u   = htmlspecialchars($url, ENT_QUOTES);
-    $tw  = htmlspecialchars($base . '/timer-widget', ENT_QUOTES);
     $svg = plugin_tiao_logo_svg(20);
     echo '<div style="margin:8px 0;">'
-       . '<div style="text-align:center;margin-bottom:6px;">'
+       . '<div style="text-align:center;">'
        . '<a href="' . $u . '" target="_blank" rel="noopener" '
        . 'style="display:inline-flex;align-items:center;gap:8px;background:#D81F2A;color:#fff;'
        . 'padding:6px 14px;border-radius:8px;text-decoration:none;font-weight:600;">'
        . $svg . 'Abrir no Tião</a></div>'
-       . '<iframe src="' . $tw . '" style="width:100%;height:52px;border:none;border-radius:10px;display:block;" '
-       . 'scrolling="no" title="Tião Timer"></iframe>'
        . '</div>';
 }
 
