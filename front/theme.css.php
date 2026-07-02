@@ -25,28 +25,29 @@ $px = static function (string $key) use ($cfg): string {
 
 $shadow = !empty($cfg['theme_shadow']) ? '0 8px 24px rgba(0,0,0,.22)' : 'none';
 ?>
+
 :root {
-  --tiao-body-bg: <?php echo $hex('theme_body_bg'); ?>;
-  --tiao-header-bg: <?php echo $hex('theme_header_bg'); ?>;
-  --tiao-sidebar-bg: <?php echo $hex('theme_sidebar_bg'); ?>;
-  --tiao-sidebar-fg: <?php echo $hex('theme_sidebar_fg'); ?>;
+  --tiao-body-bg: #111827;
+  --tiao-header-bg: #0B1220;
+  --tiao-sidebar-bg: #0B1220;
+  --tiao-sidebar-fg: #E6E8EC;
   --tiao-card-bg: #1C2940;
   --tiao-card-hover-bg: #22314A;
   --tiao-border: #3C5372;
   --tiao-primary: #69B7FF;
-  --tiao-primary-dark: <?php echo $hex('theme_primary_dark'); ?>;
-  --tiao-accent: <?php echo $hex('theme_accent'); ?>;
-  --tiao-text: <?php echo $hex('theme_text'); ?>;
-  --tiao-text-muted: <?php echo $hex('theme_text_muted'); ?>;
-  --tiao-text-disabled: <?php echo $hex('theme_text_disabled'); ?>;
-  --tiao-input-bg: <?php echo $hex('theme_input_bg'); ?>;
-  --tiao-input-border: <?php echo $hex('theme_input_border'); ?>;
-  --tiao-table-bg: <?php echo $hex('theme_table_bg'); ?>;
-  --tiao-table-alt-bg: <?php echo $hex('theme_table_alt_bg'); ?>;
-  --tiao-table-hover: <?php echo $hex('theme_table_hover'); ?>;
-  --tiao-radius: <?php echo $px('theme_radius'); ?>;
-  --tiao-card-radius: <?php echo $px('theme_card_radius'); ?>;
-  --tiao-shadow: <?php echo $shadow; ?>;
+  --tiao-primary-dark: #005FD6;
+  --tiao-accent: #E5242A;
+  --tiao-text: #F4F6F9;
+  --tiao-text-muted: #C3D0E4;
+  --tiao-text-disabled: #8796AF;
+  --tiao-input-bg: #182333;
+  --tiao-input-border: #34445C;
+  --tiao-table-bg: #182333;
+  --tiao-table-alt-bg: #141F2D;
+  --tiao-table-hover: #22314A;
+  --tiao-radius: 10px;
+  --tiao-card-radius: 12px;
+  --tiao-shadow: 0 8px 24px rgba(0,0,0,.22);
 
   --tblr-body-bg: var(--tiao-body-bg);
   --tblr-body-color: var(--tiao-text);
@@ -300,13 +301,54 @@ body [class*="actions"] {
   border-color: var(--tiao-border) !important;
 }
 
-/* Botões da barra inferior */
+/* Botão Responder / ações inferiores */
 body [class*="footer"] .btn,
 body [class*="bottom"] .btn,
-body [class*="actions"] .btn {
-  background: linear-gradient(90deg, #0047A1, #005FD6) !important;
-  border-color: #005FD6 !important;
-  color: #fff !important;
+body [class*="actions"] .btn,
+.timeline-buttons .btn,
+.itil-footer .btn,
+.form-buttons .btn {
+  height: 42px !important;
+  min-width: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  background: #005FD6 !important;
+  border: 1px solid #1976FF !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(0, 95, 214, .28) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+body [class*="footer"] .btn:hover,
+body [class*="bottom"] .btn:hover,
+body [class*="actions"] .btn:hover,
+.timeline-buttons .btn:hover,
+.itil-footer .btn:hover,
+.form-buttons .btn:hover {
+  background: #1976FF !important;
+  border-color: #69B7FF !important;
+  transform: translateY(-1px);
+}
+
+body [class*="footer"] .btn i,
+body [class*="bottom"] .btn i,
+body [class*="actions"] .btn i,
+.timeline-buttons .btn i,
+.itil-footer .btn i,
+.form-buttons .btn i {
+  color: #FFFFFF !important;
+  font-size: 18px !important;
+}
+
+.btn-group .btn + .btn,
+.dropdown-toggle-split {
+  margin-left: 2px !important;
+  border-left: 1px solid rgba(255,255,255,.22) !important;
 }
 
 /* Painel direito */
