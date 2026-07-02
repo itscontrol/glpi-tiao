@@ -13,6 +13,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save'])) {
 $config = PluginTiaoConfig::get();
 
 Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugins');
+
+$colorFields = [
+    'Base' => [
+        'theme_body_bg'       => 'Fundo principal',
+        'theme_header_bg'     => 'Topo',
+        'theme_sidebar_bg'    => 'Menu lateral',
+        'theme_sidebar_fg'    => 'Texto do menu',
+        'theme_card_bg'       => 'Cards',
+        'theme_card_hover_bg' => 'Hover / destaque',
+        'theme_border'        => 'Bordas',
+    ],
+    'Marca e texto' => [
+        'theme_primary'       => 'Links e foco',
+        'theme_primary_dark'  => 'Botões primários',
+        'theme_accent'        => 'Acento / perigo',
+        'theme_text'          => 'Texto principal',
+        'theme_text_muted'    => 'Texto secundário',
+        'theme_text_disabled' => 'Texto desabilitado',
+    ],
+    'Formulários e tabelas' => [
+        'theme_input_bg'      => 'Fundo dos campos',
+        'theme_input_border'  => 'Borda dos campos',
+        'theme_table_bg'      => 'Linha da tabela',
+        'theme_table_alt_bg'  => 'Linha alternada',
+        'theme_table_hover'   => 'Hover da tabela',
+    ],
+];
 ?>
 
 <div class="container-fluid">
@@ -87,6 +114,65 @@ Html::header('Tião – Configuração', $_SERVER['PHP_SELF'], 'config', 'plugin
               </button>
             </div>
             <div class="form-text">Configure este URL no Dashboard Tião → Conectores → GLPI → Webhook URL.</div>
+          </div>
+        </div>
+
+        <hr class="my-4" />
+
+        <h4 class="mb-3">
+          <i class="ti ti-palette me-2"></i>Tema Tião para o GLPI
+        </h4>
+
+        <div class="row mb-3">
+          <div class="col-sm-9 offset-sm-3">
+            <div class="form-check">
+              <input type="checkbox" name="theme_enabled" id="theme_enabled" class="form-check-input" value="1"
+                     <?php echo $config['theme_enabled'] ? 'checked' : ''; ?> />
+              <label for="theme_enabled" class="form-check-label">Aplicar identidade visual do Tião no GLPI</label>
+            </div>
+            <div class="form-text">Ative para injetar o tema escuro, tabelas, cards, botões e campos com a identidade IT'S Control/Tião.</div>
+          </div>
+        </div>
+
+        <?php foreach ($colorFields as $section => $fields): ?>
+          <div class="mb-3">
+            <h5 class="text-muted mb-2"><?php echo htmlspecialchars($section); ?></h5>
+            <div class="row g-3">
+              <?php foreach ($fields as $name => $label): ?>
+                <div class="col-md-4">
+                  <label class="form-label" for="<?php echo htmlspecialchars($name); ?>"><?php echo htmlspecialchars($label); ?></label>
+                  <div class="input-group">
+                    <input type="color" class="form-control form-control-color"
+                           value="<?php echo htmlspecialchars($config[$name]); ?>"
+                           onchange="document.getElementById('<?php echo htmlspecialchars($name); ?>').value = this.value.toUpperCase();" />
+                    <input type="text" class="form-control font-monospace" id="<?php echo htmlspecialchars($name); ?>"
+                           name="<?php echo htmlspecialchars($name); ?>"
+                           value="<?php echo htmlspecialchars($config[$name]); ?>"
+                           pattern="#[0-9A-Fa-f]{6}" />
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
+
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <label class="form-label" for="theme_radius">Raio geral (px)</label>
+            <input type="number" min="0" max="24" name="theme_radius" id="theme_radius"
+                   class="form-control" value="<?php echo htmlspecialchars($config['theme_radius']); ?>" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="theme_card_radius">Raio dos cards (px)</label>
+            <input type="number" min="0" max="24" name="theme_card_radius" id="theme_card_radius"
+                   class="form-control" value="<?php echo htmlspecialchars($config['theme_card_radius']); ?>" />
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <div class="form-check mb-2">
+              <input type="checkbox" name="theme_shadow" id="theme_shadow" class="form-check-input" value="1"
+                     <?php echo $config['theme_shadow'] ? 'checked' : ''; ?> />
+              <label for="theme_shadow" class="form-check-label">Usar sombra nos cards</label>
+            </div>
           </div>
         </div>
 

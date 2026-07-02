@@ -34,6 +34,14 @@ function plugin_init_tiao() {
 
     $PLUGIN_HOOKS['config_page']['tiao'] = 'front/config.form.php';
 
+    $PLUGIN_HOOKS['add_css']['tiao'] = [
+        'front/theme.css.php',
+    ];
+    $PLUGIN_HOOKS['add_javascript']['tiao'] = [
+        'front/float-config.php',
+        'front/tiao-float.js',
+    ];
+
     // Link direto no formulário do chamado
     $PLUGIN_HOOKS['post_item_form']['tiao'] = 'plugin_tiao_post_item_form';
 }
