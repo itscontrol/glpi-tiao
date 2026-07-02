@@ -1,7 +1,4 @@
 <?php
-/**
- * CSS dinâmico para aproximar o GLPI da identidade visual do Tião.
- */
 ob_start();
 define('GLPI_ROOT', realpath(__DIR__ . '/../../../'));
 $SECURITY_STRATEGY = 'no_check';
@@ -33,10 +30,10 @@ $shadow = !empty($cfg['theme_shadow']) ? '0 8px 24px rgba(0,0,0,.22)' : 'none';
   --tiao-header-bg: <?php echo $hex('theme_header_bg'); ?>;
   --tiao-sidebar-bg: <?php echo $hex('theme_sidebar_bg'); ?>;
   --tiao-sidebar-fg: <?php echo $hex('theme_sidebar_fg'); ?>;
-  --tiao-card-bg: <?php echo $hex('theme_card_bg'); ?>;
-  --tiao-card-hover-bg: <?php echo $hex('theme_card_hover_bg'); ?>;
-  --tiao-border: <?php echo $hex('theme_border'); ?>;
-  --tiao-primary: <?php echo $hex('theme_primary'); ?>;
+  --tiao-card-bg: #1C2940;
+  --tiao-card-hover-bg: #22314A;
+  --tiao-border: #3C5372;
+  --tiao-primary: #69B7FF;
   --tiao-primary-dark: <?php echo $hex('theme_primary_dark'); ?>;
   --tiao-accent: <?php echo $hex('theme_accent'); ?>;
   --tiao-text: <?php echo $hex('theme_text'); ?>;
@@ -55,7 +52,7 @@ $shadow = !empty($cfg['theme_shadow']) ? '0 8px 24px rgba(0,0,0,.22)' : 'none';
   --tblr-body-color: var(--tiao-text);
   --tblr-primary: var(--tiao-primary);
   --tblr-link-color: var(--tiao-primary);
-  --tblr-link-hover-color: #8CC8FF;
+  --tblr-link-hover-color: #A8D6FF;
   --tblr-card-bg: var(--tiao-card-bg);
   --tblr-border-color: var(--tiao-border);
   --tblr-muted: var(--tiao-text-muted);
@@ -129,7 +126,7 @@ a,
 
 a:hover,
 .btn-link:hover {
-  color: #8CC8FF !important;
+  color: #A8D6FF !important;
 }
 
 .btn,
@@ -140,15 +137,18 @@ a:hover,
   border-radius: var(--tiao-radius) !important;
 }
 
-.btn-primary {
-  background: var(--tiao-primary-dark) !important;
-  border-color: var(--tiao-primary-dark) !important;
+.btn-primary,
+button[name="add"],
+button[type="submit"].btn-primary {
+  background: linear-gradient(90deg, #0047A1, #005FD6) !important;
+  border-color: #005FD6 !important;
   color: #fff !important;
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
-  filter: brightness(1.16);
+  background: #1976FF !important;
+  border-color: #1976FF !important;
 }
 
 .btn-danger,
@@ -179,7 +179,7 @@ select {
 textarea:focus,
 select:focus {
   border-color: var(--tiao-primary) !important;
-  box-shadow: 0 0 0 .2rem rgba(79, 163, 255, .18) !important;
+  box-shadow: 0 0 0 .2rem rgba(105, 183, 255, .18) !important;
 }
 
 .form-control::placeholder,
@@ -241,12 +241,7 @@ small {
   color: #fff !important;
 }
 
-#tiao-float-root {
-  border-radius: var(--tiao-card-radius) !important;
-  box-shadow: 0 8px 28px rgba(0,0,0,.32) !important;
-}
-
-/* Correção: áreas brancas do formulário do chamado */
+/* Timeline / chamado */
 .timeline,
 .itil-timeline,
 .itil-timeline .timeline-item,
@@ -259,11 +254,6 @@ small {
 .item-form,
 .itil-object,
 .itil-object .card,
-.itil-footer,
-.form-footer,
-.sticky-footer,
-.ticket-footer,
-.page-footer,
 .bg-white,
 .bg-body,
 .bg-light {
@@ -271,54 +261,23 @@ small {
   color: var(--tiao-text) !important;
 }
 
-/* Barra inferior do chamado */
-.itil-footer,
-.form-footer,
-.sticky-bottom,
-.sticky-footer,
-.ticket-footer,
-.timeline-footer,
-.navbar.fixed-bottom,
-footer {
-  background: var(--tiao-card-bg) !important;
-  border-color: var(--tiao-border) !important;
-  color: var(--tiao-text) !important;
-}
-
-/* Blocos de mensagem / acompanhamento */
 .timeline-item .card,
 .itil-timeline .card,
 .rich_text_container,
 .timeline-content {
   background: var(--tiao-card-bg) !important;
   border-color: var(--tiao-border) !important;
+  transition: .18s ease;
 }
 
-/* Painel direito do chamado */
-aside,
-.sidebar,
-.right-panel,
-.itil-sidebar,
-.ticket-sidebar {
-  background: var(--tiao-body-bg) !important;
-  border-color: var(--tiao-border) !important;
+.timeline-item .card:hover,
+.itil-timeline .card:hover,
+.timeline-content:hover {
+  background: var(--tiao-card-hover-bg) !important;
+  transform: translateY(-1px);
 }
 
-/* Botões da barra inferior */
-.itil-footer .btn,
-.form-footer .btn,
-.sticky-footer .btn,
-.ticket-footer .btn {
-  border-radius: var(--tiao-radius) !important;
-}
-
-/* Evita bloco branco em containers internos */
-.bg-transparent,
-.bg-body-tertiary {
-  background-color: transparent !important;
-}
-
-/* Correção forte: barra inferior branca do chamado */
+/* Barra inferior do chamado */
 .timeline-buttons,
 .timeline-buttons *,
 .itil-footer,
@@ -332,17 +291,7 @@ aside,
 .ticket-actions,
 .ticket-actions *,
 .rich_text_container + div,
-.itil-timeline + div {
-  background-color: var(--tiao-card-bg) !important;
-  color: var(--tiao-text) !important;
-  border-color: var(--tiao-border) !important;
-}
-
-/* Área branca específica embaixo do formulário */
-body .bg-white,
-body .bg-light,
-body .bg-body,
-body .bg-body-tertiary,
+.itil-timeline + div,
 body [class*="footer"],
 body [class*="bottom"],
 body [class*="actions"] {
@@ -351,11 +300,48 @@ body [class*="actions"] {
   border-color: var(--tiao-border) !important;
 }
 
-/* Botões e ícones dentro da barra */
+/* Botões da barra inferior */
 body [class*="footer"] .btn,
 body [class*="bottom"] .btn,
 body [class*="actions"] .btn {
-  background-color: var(--tiao-primary-dark) !important;
-  border-color: var(--tiao-primary-dark) !important;
+  background: linear-gradient(90deg, #0047A1, #005FD6) !important;
+  border-color: #005FD6 !important;
   color: #fff !important;
+}
+
+/* Painel direito */
+aside,
+.sidebar,
+.right-panel,
+.itil-sidebar,
+.ticket-sidebar {
+  background: var(--tiao-body-bg) !important;
+  border-color: var(--tiao-border) !important;
+}
+
+aside .card,
+.sidebar .card,
+.right-panel .card,
+.itil-sidebar .card,
+.ticket-sidebar .card {
+  padding: 20px !important;
+}
+
+/* Avatares */
+.avatar,
+img.avatar,
+.user-avatar {
+  border-radius: 50% !important;
+  border: 2px solid var(--tiao-primary) !important;
+}
+
+/* Evita blocos claros */
+.bg-transparent,
+.bg-body-tertiary {
+  background-color: transparent !important;
+}
+
+#tiao-float-root {
+  border-radius: var(--tiao-card-radius) !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,.32) !important;
 }
