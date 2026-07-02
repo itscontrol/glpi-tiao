@@ -317,3 +317,45 @@ aside,
 .bg-body-tertiary {
   background-color: transparent !important;
 }
+
+/* Correção forte: barra inferior branca do chamado */
+.timeline-buttons,
+.timeline-buttons *,
+.itil-footer,
+.itil-footer *,
+.form-buttons,
+.form-buttons *,
+.footer-actions,
+.footer-actions *,
+.sticky-actions,
+.sticky-actions *,
+.ticket-actions,
+.ticket-actions *,
+.rich_text_container + div,
+.itil-timeline + div {
+  background-color: var(--tiao-card-bg) !important;
+  color: var(--tiao-text) !important;
+  border-color: var(--tiao-border) !important;
+}
+
+/* Área branca específica embaixo do formulário */
+body .bg-white,
+body .bg-light,
+body .bg-body,
+body .bg-body-tertiary,
+body [class*="footer"],
+body [class*="bottom"],
+body [class*="actions"] {
+  background-color: var(--tiao-card-bg) !important;
+  color: var(--tiao-text) !important;
+  border-color: var(--tiao-border) !important;
+}
+
+/* Botões e ícones dentro da barra */
+body [class*="footer"] .btn,
+body [class*="bottom"] .btn,
+body [class*="actions"] .btn {
+  background-color: var(--tiao-primary-dark) !important;
+  border-color: var(--tiao-primary-dark) !important;
+  color: #fff !important;
+}
