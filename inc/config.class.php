@@ -24,6 +24,28 @@ class PluginTiaoConfig extends CommonDBTM {
             'api_key'  => $rows['api_key']  ?? '',
             'secret'   => $rows['secret']   ?? '',
             'active'   => (int) ($rows['active'] ?? 0),
+            'theme_enabled'       => (int) ($rows['theme_enabled'] ?? 1),
+            'theme_body_bg'       => $rows['theme_body_bg'] ?? '#111827',
+            'theme_header_bg'     => $rows['theme_header_bg'] ?? '#0B1220',
+            'theme_sidebar_bg'    => $rows['theme_sidebar_bg'] ?? '#0B1220',
+            'theme_sidebar_fg'    => $rows['theme_sidebar_fg'] ?? '#E6E8EC',
+            'theme_card_bg'       => $rows['theme_card_bg'] ?? '#182333',
+            'theme_card_hover_bg' => $rows['theme_card_hover_bg'] ?? '#22314A',
+            'theme_border'        => $rows['theme_border'] ?? '#31425C',
+            'theme_primary'       => $rows['theme_primary'] ?? '#4FA3FF',
+            'theme_primary_dark'  => $rows['theme_primary_dark'] ?? '#0047A1',
+            'theme_accent'        => $rows['theme_accent'] ?? '#E5242A',
+            'theme_text'          => $rows['theme_text'] ?? '#F4F6F9',
+            'theme_text_muted'    => $rows['theme_text_muted'] ?? '#C3D0E4',
+            'theme_text_disabled' => $rows['theme_text_disabled'] ?? '#8796AF',
+            'theme_input_bg'      => $rows['theme_input_bg'] ?? '#182333',
+            'theme_input_border'  => $rows['theme_input_border'] ?? '#34445C',
+            'theme_table_bg'      => $rows['theme_table_bg'] ?? '#182333',
+            'theme_table_alt_bg'  => $rows['theme_table_alt_bg'] ?? '#141F2D',
+            'theme_table_hover'   => $rows['theme_table_hover'] ?? '#22314A',
+            'theme_radius'        => $rows['theme_radius'] ?? '10',
+            'theme_card_radius'   => $rows['theme_card_radius'] ?? '12',
+            'theme_shadow'        => $rows['theme_shadow'] ?? '1',
         ];
     }
 
@@ -37,6 +59,28 @@ class PluginTiaoConfig extends CommonDBTM {
             'api_key'  => trim($data['api_key']  ?? ''),
             'secret'   => trim($data['secret']   ?? ''),
             'active'   => isset($data['active']) ? '1' : '0',
+            'theme_enabled'       => isset($data['theme_enabled']) ? '1' : '0',
+            'theme_body_bg'       => self::normalizeColor($data['theme_body_bg'] ?? '#111827', '#111827'),
+            'theme_header_bg'     => self::normalizeColor($data['theme_header_bg'] ?? '#0B1220', '#0B1220'),
+            'theme_sidebar_bg'    => self::normalizeColor($data['theme_sidebar_bg'] ?? '#0B1220', '#0B1220'),
+            'theme_sidebar_fg'    => self::normalizeColor($data['theme_sidebar_fg'] ?? '#E6E8EC', '#E6E8EC'),
+            'theme_card_bg'       => self::normalizeColor($data['theme_card_bg'] ?? '#182333', '#182333'),
+            'theme_card_hover_bg' => self::normalizeColor($data['theme_card_hover_bg'] ?? '#22314A', '#22314A'),
+            'theme_border'        => self::normalizeColor($data['theme_border'] ?? '#31425C', '#31425C'),
+            'theme_primary'       => self::normalizeColor($data['theme_primary'] ?? '#4FA3FF', '#4FA3FF'),
+            'theme_primary_dark'  => self::normalizeColor($data['theme_primary_dark'] ?? '#0047A1', '#0047A1'),
+            'theme_accent'        => self::normalizeColor($data['theme_accent'] ?? '#E5242A', '#E5242A'),
+            'theme_text'          => self::normalizeColor($data['theme_text'] ?? '#F4F6F9', '#F4F6F9'),
+            'theme_text_muted'    => self::normalizeColor($data['theme_text_muted'] ?? '#C3D0E4', '#C3D0E4'),
+            'theme_text_disabled' => self::normalizeColor($data['theme_text_disabled'] ?? '#8796AF', '#8796AF'),
+            'theme_input_bg'      => self::normalizeColor($data['theme_input_bg'] ?? '#182333', '#182333'),
+            'theme_input_border'  => self::normalizeColor($data['theme_input_border'] ?? '#34445C', '#34445C'),
+            'theme_table_bg'      => self::normalizeColor($data['theme_table_bg'] ?? '#182333', '#182333'),
+            'theme_table_alt_bg'  => self::normalizeColor($data['theme_table_alt_bg'] ?? '#141F2D', '#141F2D'),
+            'theme_table_hover'   => self::normalizeColor($data['theme_table_hover'] ?? '#22314A', '#22314A'),
+            'theme_radius'        => self::normalizePixels($data['theme_radius'] ?? '10', '10'),
+            'theme_card_radius'   => self::normalizePixels($data['theme_card_radius'] ?? '12', '12'),
+            'theme_shadow'        => isset($data['theme_shadow']) ? '1' : '0',
         ];
 
         foreach ($fields as $name => $value) {
@@ -118,7 +162,47 @@ class PluginTiaoConfig extends CommonDBTM {
             'api_key'  => '',
             'secret'   => bin2hex(random_bytes(16)),
             'active'   => '1',
+            'theme_enabled'       => '1',
+            'theme_body_bg'       => '#111827',
+            'theme_header_bg'     => '#0B1220',
+            'theme_sidebar_bg'    => '#0B1220',
+            'theme_sidebar_fg'    => '#E6E8EC',
+            'theme_card_bg'       => '#182333',
+            'theme_card_hover_bg' => '#22314A',
+            'theme_border'        => '#31425C',
+            'theme_primary'       => '#4FA3FF',
+            'theme_primary_dark'  => '#0047A1',
+            'theme_accent'        => '#E5242A',
+            'theme_text'          => '#F4F6F9',
+            'theme_text_muted'    => '#C3D0E4',
+            'theme_text_disabled' => '#8796AF',
+            'theme_input_bg'      => '#182333',
+            'theme_input_border'  => '#34445C',
+            'theme_table_bg'      => '#182333',
+            'theme_table_alt_bg'  => '#141F2D',
+            'theme_table_hover'   => '#22314A',
+            'theme_radius'        => '10',
+            'theme_card_radius'   => '12',
+            'theme_shadow'        => '1',
         ];
+    }
+
+    private static function normalizeColor(string $value, string $fallback): string {
+        $value = trim($value);
+        if (preg_match('/^#[0-9a-fA-F]{6}$/', $value)) {
+            return strtoupper($value);
+        }
+
+        return $fallback;
+    }
+
+    private static function normalizePixels(string $value, string $fallback): string {
+        $value = trim($value);
+        if (preg_match('/^\d{1,2}$/', $value)) {
+            return (string) min(24, max(0, (int) $value));
+        }
+
+        return $fallback;
     }
 
     private static function hasColumn(string $field): bool {
