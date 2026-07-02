@@ -22,6 +22,7 @@ class PluginTiaoApi {
                 'ticket.close'      => self::closeTicket($body),
                 'ticket.followup'   => self::addFollowup($body),
                 'ticket.get'        => self::getTicket($body),
+                'report.billing'    => self::reportBilling($body),
                 'zabbix.event'      => PluginTiaoZabbix::handle($body),
                 default             => throw new RuntimeException("Ação desconhecida: $action", 400),
             };
@@ -273,6 +274,195 @@ class PluginTiaoApi {
             'solved_at'   => $f['solvedate'],
             'closed_at'   => $f['closedate'],
         ];
+    }
+
+    /**
+     * Relatório de faturamento por entidade + período.
+     * Migra as queries do Apps Script (AdicionaTabela / Problema / Tarefa) para
+     * dentro do plugin, onde há acesso direto ao $DB. Devolve dados crus (sem
+     * formatar URL/data/duração) — a formatação fica no Tião.
+     *
+     * Body: { entity_id:int, from:'Y-m-d H:i:s', to:'Y-m-d H:i:s',
+     *         recursive?:bool (default true — inclui sub-entidades) }
+     */
+    private static function reportBilling(array $body): array {
+        global $DB;
+
+        $entityId = isset($body['entity_id']) ? (int) $body['entity_id'] : -1;
+        if ($entityId < 0) {
+            throw new RuntimeException('Campo obrigatório: entity_id', 400);
+        }
+
+        $from = self::sanitizeDate($body['from'] ?? '');
+        $to   = self::sanitizeDate($body['to'] ?? '');
+        if (!$from || !$to) {
+            throw new RuntimeException("Campos 'from' e 'to' devem ser datas 'Y-m-d H:i:s'", 400);
+        }
+
+        // Escopo de entidades: a própria + sub-entidades (espelha a árvore GLPI),
+        // a menos que recursive=false. getSonsOf devolve os ids da subárvore.
+        $recursive = ($body['recursive'] ?? true) !== false;
+        if ($recursive) {
+            $ids = getSonsOf('glpi_entities', $entityId);
+            $ids = array_map('intval', array_values($ids));
+        } else {
+            $ids = [$entityId];
+        }
+        if (empty($ids)) {
+            $ids = [$entityId];
+        }
+        $entityIn = implode(',', $ids);
+
+        return [
+            'entity_id' => $entityId,
+            'from'      => $from,
+            'to'        => $to,
+            'tickets'   => self::queryTickets($entityIn, $from, $to),
+            'problems'  => self::queryProblems($entityIn, $from, $to),
+            'tasks'     => self::queryTicketTasks($entityIn, $from, $to),
+        ];
+    }
+
+    /** Valida e normaliza 'Y-m-d' ou 'Y-m-d H:i:s'. Retorna string segura ou null. */
+    private static function sanitizeDate(string $value): ?string {
+        $value = trim($value);
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value . ' 00:00:00';
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value)) {
+            return $value;
+        }
+        return null;
+    }
+
+    /** Executa SQL cru e devolve todas as linhas como array associativo. */
+    private static function fetchAll(string $sql): array {
+        global $DB;
+        $rows = [];
+        $result = $DB->doQuery($sql);
+        if ($result) {
+            while ($row = $DB->fetchAssoc($result)) {
+                $rows[] = $row;
+            }
+        }
+        return $rows;
+    }
+
+    private static function queryTickets(string $entityIn, string $from, string $to): array {
+        $sql = "
+            SELECT gt.id,
+                   ge.notification_subject_tag,
+                   ge.name AS entidade,
+                   gt.name,
+                   gt.date_creation,
+                   gt.status,
+                   CASE WHEN gt.type = 1 THEN 'Incidente' ELSE 'Requisição' END AS tipo,
+                   CONCAT(COALESCE(gu.firstname, ''), ' ', COALESCE(gu.realname, '')) AS requerente,
+                   gu2.email,
+                   gc.completename AS categoria
+            FROM glpi_tickets gt
+            INNER JOIN glpi_entities ge ON ge.id = gt.entities_id
+            LEFT JOIN glpi_tickets_users gtu ON gtu.tickets_id = gt.id AND gtu.`type` = 1
+            LEFT JOIN glpi_users gu ON gu.id = gtu.users_id
+            LEFT JOIN glpi_useremails gu2 ON gu2.users_id = gu.id AND gu2.is_default = 1
+            LEFT JOIN glpi_itilcategories gc ON gc.id = gt.itilcategories_id
+            WHERE gt.is_deleted = 0
+              AND gt.entities_id IN ($entityIn)
+              AND gt.date_creation >= '$from' AND gt.date_creation <= '$to'
+            ORDER BY gt.date_creation
+        ";
+        $rows = self::fetchAll($sql);
+        foreach ($rows as &$r) {
+            $r['id']          = (int) $r['id'];
+            $r['status']      = (int) $r['status'];
+            $r['status_name'] = Ticket::getStatus((int) $r['status']);
+            $r['requerente']  = trim((string) $r['requerente']);
+        }
+        return $rows;
+    }
+
+    private static function queryProblems(string $entityIn, string $from, string $to): array {
+        $sql = "
+            SELECT gp.id,
+                   ge.notification_subject_tag,
+                   ge.name AS entidade,
+                   gp.name,
+                   gp.date_creation,
+                   gp.status,
+                   gc.completename AS categoria,
+                   TRIM(CONCAT(COALESCE(gc2.name, ''), ' ', COALESCE(gc2.serial, ''))) AS item
+            FROM glpi_problems gp
+            INNER JOIN glpi_entities ge ON ge.id = gp.entities_id
+            LEFT JOIN glpi_items_problems gip ON gip.problems_id = gp.id
+            LEFT JOIN glpi_computers gc2 ON gc2.id = gip.items_id
+            LEFT JOIN glpi_itilcategories gc ON gc.id = gp.itilcategories_id
+            WHERE gp.is_deleted = 0
+              AND gp.entities_id IN ($entityIn)
+              AND gp.date_creation >= '$from' AND gp.date_creation <= '$to'
+            ORDER BY gp.date_creation
+        ";
+        $rows = self::fetchAll($sql);
+        foreach ($rows as &$r) {
+            $r['id']          = (int) $r['id'];
+            $r['status']      = (int) $r['status'];
+            $r['status_name'] = Problem::getStatus((int) $r['status']);
+        }
+        return $rows;
+    }
+
+    private static function queryTicketTasks(string $entityIn, string $from, string $to): array {
+        global $DB;
+        // A tabela de apontamentos só existe se o plugin ActualTime estiver instalado.
+        $hasActualTime = $DB->tableExists('glpi_plugin_actualtime_tasks');
+        $atSelect = $hasActualTime
+            ? "gpat.actual_begin, gpat.actual_end, gpat.actual_actiontime"
+            : "NULL AS actual_begin, NULL AS actual_end, NULL AS actual_actiontime";
+        $atJoin = $hasActualTime
+            ? "LEFT JOIN glpi_plugin_actualtime_tasks gpat
+                 ON gpat.items_id = gtt.id AND gpat.itemtype = 'TicketTask'"
+            : "";
+        $atRange = $hasActualTime
+            ? "OR (gpat.actual_begin >= '$from' AND gpat.actual_end <= '$to')"
+            : "";
+
+        // Parênteses corrigidos: no Apps Script o AND is_deleted vinha antes de um
+        // bloco de OR sem parênteses, o que trazia linhas apagadas. Aqui o filtro de
+        // período fica todo dentro de um único grupo OR.
+        $sql = "
+            SELECT gt.id AS ticket_id,
+                   gtt.id AS task_id,
+                   ge.notification_subject_tag,
+                   ge.name AS entidade,
+                   CONCAT(COALESCE(gu.firstname, ''), ' ', COALESCE(gu.realname, '')) AS requerente,
+                   gu2.email,
+                   gtt.content,
+                   gtt.`date`,
+                   gtt.date_creation,
+                   $atSelect
+            FROM glpi_tickets gt
+            INNER JOIN glpi_entities ge ON ge.id = gt.entities_id
+            INNER JOIN glpi_tickettasks gtt ON gtt.tickets_id = gt.id
+            LEFT JOIN glpi_tickets_users gtu ON gtu.tickets_id = gt.id AND gtu.`type` = 1
+            LEFT JOIN glpi_users gu ON gu.id = gtu.users_id
+            LEFT JOIN glpi_useremails gu2 ON gu2.users_id = gu.id AND gu2.is_default = 1
+            $atJoin
+            WHERE gt.is_deleted = 0
+              AND gt.entities_id IN ($entityIn)
+              AND (
+                    (gtt.date_creation >= '$from' AND gtt.date_creation <= '$to')
+                 OR (gtt.date_mod >= '$from' AND gtt.date_mod <= '$to')
+                 $atRange
+              )
+            ORDER BY gt.id, gtt.id
+        ";
+        $rows = self::fetchAll($sql);
+        foreach ($rows as &$r) {
+            $r['ticket_id']         = (int) $r['ticket_id'];
+            $r['task_id']           = (int) $r['task_id'];
+            $r['requerente']        = trim((string) $r['requerente']);
+            $r['actual_actiontime'] = isset($r['actual_actiontime']) ? (int) $r['actual_actiontime'] : 0;
+        }
+        return $rows;
     }
 
     private static function requireField(array $body, string $field): void {
