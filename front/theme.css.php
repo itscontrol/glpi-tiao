@@ -141,15 +141,15 @@ a:hover,
 .btn-primary,
 button[name="add"],
 button[type="submit"].btn-primary {
-  background: linear-gradient(90deg, #0047A1, #005FD6) !important;
-  border-color: #005FD6 !important;
+  background: #005FD6 !important;
+  border-color: #1976FF !important;
   color: #fff !important;
 }
 
 .btn-primary:hover,
 .btn-primary:focus {
   background: #1976FF !important;
-  border-color: #1976FF !important;
+  border-color: #69B7FF !important;
 }
 
 .btn-danger,
@@ -196,6 +196,7 @@ small {
   color: var(--tiao-text-disabled) !important;
 }
 
+/* Tabelas */
 .table {
   --tblr-table-bg: var(--tiao-table-bg);
   --tblr-table-color: var(--tiao-text);
@@ -221,6 +222,7 @@ small {
   color: #fff !important;
 }
 
+/* Badges */
 .badge.bg-warning {
   background: #E6B800 !important;
   color: #111827 !important;
@@ -275,80 +277,55 @@ small {
 .itil-timeline .card:hover,
 .timeline-content:hover {
   background: var(--tiao-card-hover-bg) !important;
-  transform: translateY(-1px);
 }
 
-/* Barra inferior do chamado */
-.timeline-buttons,
-.timeline-buttons *,
+/* Barra inferior do chamado — sem seletores genéricos */
 .itil-footer,
-.itil-footer *,
-.form-buttons,
-.form-buttons *,
-.footer-actions,
-.footer-actions *,
-.sticky-actions,
-.sticky-actions *,
-.ticket-actions,
-.ticket-actions *,
-.rich_text_container + div,
-.itil-timeline + div,
-body [class*="footer"],
-body [class*="bottom"],
-body [class*="actions"] {
-  background-color: var(--tiao-card-bg) !important;
-  color: var(--tiao-text) !important;
+.form-footer,
+.timeline-footer,
+.ticket-footer,
+.sticky-footer {
+  background: var(--tiao-card-bg) !important;
   border-color: var(--tiao-border) !important;
+  color: var(--tiao-text) !important;
 }
 
-/* Botão Responder / ações inferiores */
-body [class*="footer"] .btn,
-body [class*="bottom"] .btn,
-body [class*="actions"] .btn,
-.timeline-buttons .btn,
-.itil-footer .btn,
-.form-buttons .btn {
-  height: 42px !important;
-  min-width: 44px !important;
-  padding: 0 18px !important;
-  border-radius: 12px !important;
+/* Botão Responder */
+.itil-footer .btn-primary,
+.form-footer .btn-primary,
+.timeline-footer .btn-primary,
+.ticket-footer .btn-primary,
+.sticky-footer .btn-primary {
+  height: 40px !important;
+  padding: 0 16px !important;
+  border-radius: 10px !important;
   background: #005FD6 !important;
   border: 1px solid #1976FF !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 4px 14px rgba(0, 95, 214, .28) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
+  gap: 7px !important;
+  box-shadow: 0 4px 14px rgba(0, 95, 214, .22) !important;
 }
 
-body [class*="footer"] .btn:hover,
-body [class*="bottom"] .btn:hover,
-body [class*="actions"] .btn:hover,
-.timeline-buttons .btn:hover,
-.itil-footer .btn:hover,
-.form-buttons .btn:hover {
-  background: #1976FF !important;
-  border-color: #69B7FF !important;
-  transform: translateY(-1px);
+/* Setinha ao lado do responder */
+.itil-footer .dropdown-toggle,
+.form-footer .dropdown-toggle,
+.timeline-footer .dropdown-toggle,
+.ticket-footer .dropdown-toggle,
+.sticky-footer .dropdown-toggle {
+  width: 42px !important;
+  padding: 0 !important;
+  border-radius: 10px !important;
 }
 
-body [class*="footer"] .btn i,
-body [class*="bottom"] .btn i,
-body [class*="actions"] .btn i,
-.timeline-buttons .btn i,
-.itil-footer .btn i,
-.form-buttons .btn i {
-  color: #FFFFFF !important;
-  font-size: 18px !important;
-}
-
-.btn-group .btn + .btn,
-.dropdown-toggle-split {
-  margin-left: 2px !important;
-  border-left: 1px solid rgba(255,255,255,.22) !important;
+/* NÃO alterar botões do painel lateral */
+.itil-sidebar .btn,
+.ticket-sidebar .btn,
+.right-panel .btn,
+aside .btn {
+  box-shadow: none !important;
 }
 
 /* Painel direito */
