@@ -245,3 +245,75 @@ small {
   border-radius: var(--tiao-card-radius) !important;
   box-shadow: 0 8px 28px rgba(0,0,0,.32) !important;
 }
+
+/* Correção: áreas brancas do formulário do chamado */
+.timeline,
+.itil-timeline,
+.itil-timeline .timeline-item,
+.itil-timeline .timeline-content,
+.rich_text_container,
+.main-content,
+.ticket-scrollable-content,
+.layout-wrapper,
+.item-main,
+.item-form,
+.itil-object,
+.itil-object .card,
+.itil-footer,
+.form-footer,
+.sticky-footer,
+.ticket-footer,
+.page-footer,
+.bg-white,
+.bg-body,
+.bg-light {
+  background: var(--tiao-body-bg) !important;
+  color: var(--tiao-text) !important;
+}
+
+/* Barra inferior do chamado */
+.itil-footer,
+.form-footer,
+.sticky-bottom,
+.sticky-footer,
+.ticket-footer,
+.timeline-footer,
+.navbar.fixed-bottom,
+footer {
+  background: var(--tiao-card-bg) !important;
+  border-color: var(--tiao-border) !important;
+  color: var(--tiao-text) !important;
+}
+
+/* Blocos de mensagem / acompanhamento */
+.timeline-item .card,
+.itil-timeline .card,
+.rich_text_container,
+.timeline-content {
+  background: var(--tiao-card-bg) !important;
+  border-color: var(--tiao-border) !important;
+}
+
+/* Painel direito do chamado */
+aside,
+.sidebar,
+.right-panel,
+.itil-sidebar,
+.ticket-sidebar {
+  background: var(--tiao-body-bg) !important;
+  border-color: var(--tiao-border) !important;
+}
+
+/* Botões da barra inferior */
+.itil-footer .btn,
+.form-footer .btn,
+.sticky-footer .btn,
+.ticket-footer .btn {
+  border-radius: var(--tiao-radius) !important;
+}
+
+/* Evita bloco branco em containers internos */
+.bg-transparent,
+.bg-body-tertiary {
+  background-color: transparent !important;
+}
