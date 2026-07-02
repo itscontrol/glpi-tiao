@@ -38,18 +38,21 @@ function plugin_init_tiao() {
     $PLUGIN_HOOKS['post_item_form']['tiao'] = 'plugin_tiao_post_item_form';
 }
 
-// Renderiza um botão "Abrir no Tião" no formulário do Ticket, com link para a
-// conversa correspondente na plataforma (resolvida pelo id do chamado).
+// Renderiza um botão "Abrir no Tião" no formulário do Ticket, Problema e
+// Mudança, com link para a conversa correspondente na plataforma. O link leva
+// também o TIPO do item: Ticket e Problem podem ter o mesmo número, então
+// resolver só pelo id abria a conversa errada.
 function plugin_tiao_post_item_form($params) {
     $item = $params['item'] ?? null;
-    if (!($item instanceof Ticket) || $item->isNewItem()) return;
+    if (!($item instanceof Ticket) && !($item instanceof Problem) && !($item instanceof Change)) return;
+    if ($item->isNewItem()) return;
 
     $cfg = PluginTiaoConfig::get();
     $base = rtrim((string)($cfg['tiao_url'] ?? ''), '/');
     if ($base === '') return;
 
     $id  = (int) $item->getID();
-    $url = $base . '/dashboard/atendimentos?ticket=' . $id;
+    $url = $base . '/dashboard/atendimentos?ticket=' . $id . '&type=' . $item->getType();
     $u   = htmlspecialchars($url, ENT_QUOTES);
     $svg = plugin_tiao_logo_svg(20);
     echo '<div style="margin:8px 0;">'
