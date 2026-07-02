@@ -171,7 +171,7 @@ function plugin_tiao_task_added(TicketTask $task) {
 }
 
 function plugin_tiao_task_updated(TicketTask $task) {
-    PluginTiaoNotifier::sendTask('ticket.updated', $task);
+    PluginTiaoNotifier::sendTask('ticket.task_updated', $task);
 }
 
 function plugin_tiao_ticket_purged(Ticket $ticket) {
