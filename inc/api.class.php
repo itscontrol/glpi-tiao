@@ -23,7 +23,6 @@ class PluginTiaoApi {
                 'ticket.followup'   => self::addFollowup($body),
                 'ticket.get'        => self::getTicket($body),
                 'report.billing'    => self::reportBilling($body),
-                'zabbix.event'      => PluginTiaoZabbix::handle($body),
                 default             => throw new RuntimeException("Ação desconhecida: $action", 400),
             };
 
